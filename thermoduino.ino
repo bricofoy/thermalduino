@@ -12,7 +12,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>
 #include <yasm.h>
-#include "btn.h"
+#include <btn.h>
 #include <DS1307.h>
 #include <SdFat.h>
 #include <Streaming.h>
@@ -48,12 +48,14 @@ char Counter=0;
 #define PIN_R5		A0	//boiler pump
 
 byte Outputs=0;
+byte OutputsForce=0;
 #define OUT_R1	1
 #define OUT_R2	2
 #define OUT_R3	4
 #define OUT_R4	8
 #define OUT_R5	16
 byte Pwm1=0;
+
 
 char S1[4];
 
@@ -97,7 +99,7 @@ void setup(void)
   pinMode(PIN_R4,OUTPUT);
   pinMode(PIN_R5,OUTPUT);
   pinMode(PIN_PWM1,OUTPUT);
-  outputs();
+  outputsWrite();
   
   sensors.begin(); // Start up the dallas library
   sensors.setWaitForConversion(false); //don't wait !
@@ -111,6 +113,7 @@ void setup(void)
 
 void loop(void) 
 {
+	Outputs &= OutputsForce; //erase all output bits exept forced ones
 	RTC.get(&DateTime,true);
 	btn.update(!digitalRead(PIN_BTN)); // ! because btn switch to gnd
 	encoderRead();
@@ -119,10 +122,18 @@ void loop(void)
 	solar.run();
 	heat.run();
 	boiler.run();
-	outputs();
+	outputsWrite();
 }
 
-void outputs()
+void setOutput(byte pin, bool state)
+{
+	if(!(OutputsForce&pin))
+		if(state) Outputs |= pin; //set the <pin> bit
+		else Outputs &= ~pin; //unset the <pin> bit		
+}
+
+
+void outputsWrite()
 {
 	digitalWrite(PIN_R1,!(Outputs&OUT_R1));
 	digitalWrite(PIN_R2,!(Outputs&OUT_R2));
@@ -226,7 +237,7 @@ void menu_start()
 
 		lcd.setCursor(8,1); lcd.print(F("     "));
 		lcd.setCursor(8,1); lcd.print(T[0],1);
-		lcd.setCursor(16,1); lcd.print("100");
+		lcd.setCursor(16,1); lcd.print(Pwm1);
 		
 		lcd.setCursor(4,2); lcd.print(F("     "));
 		lcd.setCursor(4,2); lcd.print(T[7],1);
@@ -248,7 +259,7 @@ void menu_start2()
 		lcd.clear();
 		lcd.print(F("T1:      T10:"));
 		lcd.setCursor(0,1); lcd.print(F("T2:       T3:"));
-		lcd.setCursor(0,2); lcd.print(F("R1:"));
+		lcd.setCursor(0,2); lcd.print(F("T4:"));
 		lcd.setCursor(0,3); lcd.print(F("R1:"));
 	}	
 	
@@ -260,7 +271,7 @@ void menu_start2()
 		lcd.setCursor(3,3); lcd<<(Outputs&OUT_R1)<<" "<<Pwm1<<"%"; 
 	}
 	
-	if(Counter<0 || menu.elapsed(15E3))
+	if(Counter<0 || menu.elapsed(60E3))
 		menu.next(menu_start);
 	if(encoderCount()>0)
 		menu.next(menu_start3);
@@ -282,17 +293,19 @@ void menu_start3()
 	{
 		lcd.setCursor(3,0); lcd.print(T[4],1); lcd.setCursor(13,0); lcd.print(T[5],1);
 		lcd.setCursor(3,1); lcd.print(T[6],1); lcd.setCursor(13,1); lcd.print(T[7],1);
-		lcd.setCursor(3,2); lcd<<(Outputs&OUT_R2); 
-		lcd.setCursor(8,2); lcd<<(Outputs&OUT_R3); 
-		lcd.setCursor(13,2); lcd<<(Outputs&OUT_R4);
+		lcd.setCursor(3,2); lcd<<((Outputs&OUT_R2)&&1); 
+		lcd.setCursor(8,2); lcd<<((Outputs&OUT_R3)&&1); 
+		lcd.setCursor(13,2); lcd<<((Outputs&OUT_R4)&&1);
 		lcd.setCursor(3,3); lcd.print(T[8],1); 
-		lcd.setCursor(13,3); lcd<<(Outputs&OUT_R5);
+		lcd.setCursor(13,3); lcd<<((Outputs&OUT_R5)&&1);
 	}
 	
-	if(Counter<0)
+	if(encoderCount()<0)
 		menu.next(menu_start2);	
-	if(menu.elapsed(15E3))
-		menu.next(menu_start);
+	if(menu.elapsed(60E3))
+		menu.next(menu_start);	
+	if(btn.state(BTN_LONGCLICK)) 
+		menu.next(menu_forceoutputs);
 }
 
 	
@@ -328,6 +341,101 @@ void menu_param()
 				
 	if(btn.state(BTN_LONGCLICK) || menu.elapsed(15E3))
 		menu.next(menu_start);
+}
+
+void outset(byte bit, char count)
+{
+	if(count==0) return;
+	
+	char mode;
+	mode=(((OutputsForce&bit)&&1)<<1)|((Outputs&bit)&&1);//0=auto,0 1=auto,1 2=forced,0 3=forced,1
+	
+	if(mode==0) mode=1;
+	mode+=count;
+	if(mode>3) mode=1;
+	if(mode<1) mode=3;
+
+	switch (mode)
+	{
+		case 1 : { OutputsForce &= ~bit; break;}
+		case 2 : { OutputsForce |= bit; Outputs &= ~bit; break;}
+		case 3 : { OutputsForce |= bit; Outputs |= bit; break;}
+	}
+}
+
+void outprintset()
+{
+	lcd.setCursor(3,0); 
+	if(OutputsForce&OUT_R1) {lcd<<F("    ");lcd.setCursor(3,0); lcd<<(Outputs&OUT_R1);}
+	else lcd << F("AUTO");
+	lcd.setCursor(8,0); lcd<<Pwm1<<F("%  ");
+	lcd.setCursor(3,1); 
+	if(OutputsForce&OUT_R2) {lcd<<F("    ");lcd.setCursor(3,1); lcd<<((Outputs&OUT_R2)&&1);}
+	else lcd << F("AUTO");
+	lcd.setCursor(3,2); 
+	if(OutputsForce&OUT_R3) {lcd<<F("    ");lcd.setCursor(3,2); lcd<<((Outputs&OUT_R3)&&1);}
+	else lcd << F("AUTO");
+	lcd.setCursor(3,3); 
+	if(OutputsForce&OUT_R4) {lcd<<F("    ");lcd.setCursor(3,3); lcd<<((Outputs&OUT_R4)&&1);}
+	else lcd << F("AUTO");
+	lcd.setCursor(15,3); 
+	if(OutputsForce&OUT_R5) {lcd<<F("    ");lcd.setCursor(15,3); lcd<<((Outputs&OUT_R5)&&1);}
+	else lcd << F("AUTO");
+	
+	switch (Pos)
+	{
+		case 0 : { lcd.setCursor(3,0); outset(OUT_R1, encoderCount()); break; }
+		case 1 : { 
+			lcd.setCursor(8,0); 
+			if(OutputsForce&OUT_R1) 
+			{
+				Pwm1+=(encoderCount()*5);
+				if(Pwm1<0) Pwm1=0;
+				if(Pwm1>100) Pwm1=100;
+			}
+			else encoderCount();
+			break; }
+		case 2 : { lcd.setCursor(3,1); outset(OUT_R2, encoderCount()); break; }
+		case 3 : { lcd.setCursor(3,2); outset(OUT_R3, encoderCount()); break; }
+		case 4 : { lcd.setCursor(3,3); outset(OUT_R4, encoderCount()); break; }
+		case 5 : { lcd.setCursor(15,3); outset(OUT_R5, encoderCount()); break; }
+	}
+}
+void menu_forceoutputs()
+{
+ 	if (menu.isFirstRun()) 
+	{
+		lcd.clear();
+		Pos=0;
+		encoderCount();
+		lcd<<F("R1:");
+		lcd.setCursor(0,1); lcd<<F("R2:");
+		lcd.setCursor(0,2); lcd<<F("R3:");
+		lcd.setCursor(0,3); lcd<<F("R4:         R5:");
+		lcd.blink();
+		outprintset();
+	}
+	
+	//refresh display when no user input only each 4sec because faster redraw
+	//takes too much time and then encoder is not responsive
+	//if (menu.periodic(4E3)) outprintset();
+	
+	if(btn.state(BTN_LONGCLICK))
+	{
+		lcd.noBlink();
+		menu.next(menu_start3);
+	}
+	
+	if(btn.state(BTN_CLICK))
+	{
+		Pos++;
+		if (Pos>5) Pos=0;
+		outprintset();
+	}
+	
+	//redraw twice to get correct value on screen, because value is changed after
+	//redraw in timeprintset()
+	if(Counter!=0) {outprintset();outprintset();} 
 }
 
 void timeprintset()
@@ -374,7 +482,6 @@ void timeprintset()
 			break; }
 	}
 }
-
 void menu_setclock()
 {
 	if (menu.isFirstRun()) 
