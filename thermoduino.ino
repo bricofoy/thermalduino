@@ -24,10 +24,13 @@
 DeviceAddress sensorAddress[SENSOR_NBR];
 float T[SENSOR_NBR];
 float Offset[SENSOR_NBR];
+bool TForce[SENSOR_NBR];
  
 #define TEMPERATURE_RESOLUTION 9 //0,5°C sensor acccuracy.
 
 #define PIN_ONE_WIRE_BUS A3
+
+#define DELAY_MENU_BACK	120E3	//2 minutes
 
 //encoder pins
 #define PIN_A	6
@@ -49,11 +52,11 @@ char Counter=0;
 
 byte Outputs=0;
 byte OutputsForce=0;
-#define OUT_R1	1
-#define OUT_R2	2
-#define OUT_R3	4
-#define OUT_R4	8
-#define OUT_R5	16
+#define BIT_R1	1
+#define BIT_R2	2
+#define BIT_R3	4
+#define BIT_R4	8
+#define BIT_R5	16
 byte Pwm1=0;
 
 
@@ -135,11 +138,11 @@ void setOutput(byte pin, bool state)
 
 void outputsWrite()
 {
-	digitalWrite(PIN_R1,!(Outputs&OUT_R1));
-	digitalWrite(PIN_R2,!(Outputs&OUT_R2));
-	digitalWrite(PIN_R3,!(Outputs&OUT_R3));
-	digitalWrite(PIN_R4,!(Outputs&OUT_R4));
-	digitalWrite(PIN_R5,!(Outputs&OUT_R5));
+	digitalWrite(PIN_R1,!(Outputs&BIT_R1));
+	digitalWrite(PIN_R2,!(Outputs&BIT_R2));
+	digitalWrite(PIN_R3,!(Outputs&BIT_R3));
+	digitalWrite(PIN_R4,!(Outputs&BIT_R4));
+	digitalWrite(PIN_R5,!(Outputs&BIT_R5));
 	analogWrite(PIN_PWM1,Pwm1);
 }
 
@@ -191,6 +194,33 @@ char encoderCount()
 	return retval;
 }
 
+void printT(byte i)
+{
+	if(TForce[i]) lcd<<"F";
+	else 
+		if(T[i]==-127) 
+		{
+			lcd<<" --.-";
+			return; 
+		}
+	if(T[i]>=0) 
+	{
+		if(!TForce[i]&&T[i]<100) lcd<<F(" ");
+		if(T[i]<10) lcd<<F(" ");
+	}
+	else if(T[i]>-10) lcd<<F(" "); 
+	
+	lcd.print(T[i],1);
+}
+
+void printR(byte bit)
+{
+	if(OutputsForce&bit) lcd<<F("F");
+	else lcd<<F(" ");
+	lcd<<(Outputs&bit);
+}
+	
+
 ///////////gettemp state machine/////////
 //
 void gettemp_request()
@@ -209,9 +239,11 @@ void gettemp_read()
 {
 	byte i=gettemp.runCount();
 	if (i<SENSOR_NBR)
-		T[i] = sensors.getTempC(sensorAddress[i]);
-	else
-		gettemp.next(gettemp_request);
+	{
+		if(!TForce[i])
+			T[i] = sensors.getTempC(sensorAddress[i]);
+	}
+	else gettemp.next(gettemp_request);
 }
 
 
@@ -224,25 +256,21 @@ void menu_start()
 	{
 		lcd.clear();
 		lcd.print(F("Ballon"));
-		lcd.setCursor(0,1); lcd.print(F("Capteur            %"));
+		lcd.setCursor(0,1); lcd.print(F("Capteur"));
 		lcd.setCursor(0,2); lcd.print(F("Int       Ext"));
 		lcd.setCursor(0,3); lcd.print(F("Chauffage"));
 	}
  	
 	if(menu.periodic(1500)) 
 	{
-		lcd.setCursor(7,0); lcd.print(F("             "));
-		lcd.setCursor(8,0); lcd.print(T[1],1);
-		lcd.setCursor(14,0); lcd.print(T[3],1);
+		lcd.setCursor(7,0); printT(1);
+		lcd.setCursor(14,0); printT(3);
 
-		lcd.setCursor(8,1); lcd.print(F("     "));
-		lcd.setCursor(8,1); lcd.print(T[0],1);
-		lcd.setCursor(16,1); lcd.print(Pwm1);
+		lcd.setCursor(7,1); printT(0);
+		lcd.setCursor(15,1); if(OutputsForce&BIT_R1) lcd<<F("F"); lcd<<Pwm1<<F("%");
 		
-		lcd.setCursor(4,2); lcd.print(F("     "));
-		lcd.setCursor(4,2); lcd.print(T[7],1);
-		lcd.setCursor(14,2); lcd.print(F("     "));
-		lcd.setCursor(14,2); lcd.print(T[6],1);
+		lcd.setCursor(3,2); printT(7);
+		lcd.setCursor(13,2); printT(6);
 	}
  
 	if(encoderCount()>0)
@@ -265,16 +293,18 @@ void menu_start2()
 	
 	if(menu.periodic(1500))
 	{
-		lcd.setCursor(3,0); lcd.print(T[0],1); lcd.setCursor(13,0); lcd.print(T[9],1);
-		lcd.setCursor(3,1); lcd.print(T[1],1); lcd.setCursor(13,1); lcd.print(T[2],1); 
-		lcd.setCursor(3,2); lcd.print(T[3],1);
-		lcd.setCursor(3,3); lcd<<(Outputs&OUT_R1)<<" "<<Pwm1<<"%"; 
+		lcd.setCursor(3,0); printT(0); lcd.setCursor(13,0); printT(9);
+		lcd.setCursor(3,1); printT(1); lcd.setCursor(13,1); printT(2); 
+		lcd.setCursor(3,2); printT(3);
+		lcd.setCursor(3,3); printR(BIT_R1); lcd<<" "<<Pwm1<<"%"; 
 	}
 	
-	if(Counter<0 || menu.elapsed(60E3))
+	if(Counter<0 || menu.elapsed(DELAY_MENU_BACK))
 		menu.next(menu_start);
 	if(encoderCount()>0)
-		menu.next(menu_start3);
+		menu.next(menu_start3);	
+	if(btn.state(BTN_LONGCLICK)) 
+		menu.next(menu_forceT);
 
 }
 
@@ -283,26 +313,27 @@ void menu_start3()
 	if (menu.isFirstRun())
 	{
 		lcd.clear();
-		lcd.print(F("T5:      T6:"));
-		lcd.setCursor(0,1); lcd.print(F("T7:      T8:"));
-		lcd.setCursor(0,2); lcd.print(F("R2:  R3:  R4:"));
-		lcd.setCursor(0,3); lcd.print(F("T9:       R5:"));
+		lcd.print(F("T5:       T6:"));
+		lcd.setCursor(0,1); lcd.print(F("T7:       T8:"));
+		lcd.setCursor(0,2); lcd.print(F("R2:   R3:   R4:"));
+		lcd.setCursor(0,3); lcd.print(F("T9:         R5:"));
 	}
 	
 	if(menu.periodic(1500))
 	{
-		lcd.setCursor(3,0); lcd.print(T[4],1); lcd.setCursor(13,0); lcd.print(T[5],1);
-		lcd.setCursor(3,1); lcd.print(T[6],1); lcd.setCursor(13,1); lcd.print(T[7],1);
-		lcd.setCursor(3,2); lcd<<((Outputs&OUT_R2)&&1); 
-		lcd.setCursor(8,2); lcd<<((Outputs&OUT_R3)&&1); 
-		lcd.setCursor(13,2); lcd<<((Outputs&OUT_R4)&&1);
-		lcd.setCursor(3,3); lcd.print(T[8],1); 
-		lcd.setCursor(13,3); lcd<<((Outputs&OUT_R5)&&1);
+		lcd.setCursor(3,0); printT(4); lcd.setCursor(13,0); printT(5);
+		lcd.setCursor(3,1); printT(6); lcd.setCursor(13,1); printT(7);
+		lcd.setCursor(3,2); printR(BIT_R2); 
+		lcd.setCursor(9,2); printR(BIT_R3); 
+		lcd.setCursor(15,2); printR(BIT_R4);
+		lcd.setCursor(3,3); printT(8); 
+		lcd.setCursor(15,3); printR(BIT_R5);
 	}
 	
 	if(encoderCount()<0)
 		menu.next(menu_start2);	
-	if(menu.elapsed(60E3))
+
+	if(menu.elapsed(DELAY_MENU_BACK))
 		menu.next(menu_start);	
 	if(btn.state(BTN_LONGCLICK)) 
 		menu.next(menu_forceoutputs);
@@ -314,10 +345,10 @@ void menu_param()
 	if (menu.isFirstRun()) 
 	{
 		lcd.clear();
-		lcd.print(F(">Reglages horloge"));
-		lcd.setCursor(1,1); lcd.print(F("Reglages sondes"));
-		lcd.setCursor(1,2); lcd.print(F("Reglages solaire"));
-		lcd.setCursor(1,3); lcd.print(F("Reglages chauffage"));
+		lcd<<(char)126<<F("Reglages horloge");
+		lcd.setCursor(1,1); lcd<<F("Reglages sondes");
+		lcd.setCursor(1,2); lcd<<F("Reglages solaire");
+		lcd.setCursor(1,3); lcd<<F("Reglages chauffage");
 		Pos=0;
 	}
 
@@ -328,7 +359,7 @@ void menu_param()
 		Pos+=encoderCount();
 		if (Pos>3) Pos=0;
 		if (Pos<0) Pos=3;
-		lcd.setCursor(0,Pos); lcd.print(F(">"));
+		lcd.setCursor(0,Pos); lcd<<(char)126;
 	}
 	if(btn.state(BTN_CLICK))
 		switch (Pos)
@@ -365,29 +396,29 @@ void outset(byte bit, char count)
 
 void outprintset()
 {
-	lcd.setCursor(3,0); 
-	if(OutputsForce&OUT_R1) {lcd<<F("    ");lcd.setCursor(3,0); lcd<<(Outputs&OUT_R1);}
-	else lcd << F("AUTO");
-	lcd.setCursor(8,0); lcd<<Pwm1<<F("%  ");
 	lcd.setCursor(3,1); 
-	if(OutputsForce&OUT_R2) {lcd<<F("    ");lcd.setCursor(3,1); lcd<<((Outputs&OUT_R2)&&1);}
+	if(OutputsForce&BIT_R1) {lcd<<F("    ");lcd.setCursor(3,1); lcd<<(Outputs&BIT_R1);}
 	else lcd << F("AUTO");
+	lcd.setCursor(8,1); lcd<<Pwm1<<F("%  ");
 	lcd.setCursor(3,2); 
-	if(OutputsForce&OUT_R3) {lcd<<F("    ");lcd.setCursor(3,2); lcd<<((Outputs&OUT_R3)&&1);}
+	if(OutputsForce&BIT_R2) {lcd<<F("    ");lcd.setCursor(3,2); lcd<<((Outputs&BIT_R2)&&1);}
 	else lcd << F("AUTO");
 	lcd.setCursor(3,3); 
-	if(OutputsForce&OUT_R4) {lcd<<F("    ");lcd.setCursor(3,3); lcd<<((Outputs&OUT_R4)&&1);}
+	if(OutputsForce&BIT_R3) {lcd<<F("    ");lcd.setCursor(3,3); lcd<<((Outputs&BIT_R3)&&1);}
+	else lcd << F("AUTO");
+	lcd.setCursor(15,2); 
+	if(OutputsForce&BIT_R4) {lcd<<F("    ");lcd.setCursor(15,2); lcd<<((Outputs&BIT_R4)&&1);}
 	else lcd << F("AUTO");
 	lcd.setCursor(15,3); 
-	if(OutputsForce&OUT_R5) {lcd<<F("    ");lcd.setCursor(15,3); lcd<<((Outputs&OUT_R5)&&1);}
+	if(OutputsForce&BIT_R5) {lcd<<F("    ");lcd.setCursor(15,3); lcd<<((Outputs&BIT_R5)&&1);}
 	else lcd << F("AUTO");
 	
 	switch (Pos)
 	{
-		case 0 : { lcd.setCursor(3,0); outset(OUT_R1, encoderCount()); break; }
+		case 0 : { lcd.setCursor(3,1); outset(BIT_R1, encoderCount()); break; }
 		case 1 : { 
-			lcd.setCursor(8,0); 
-			if(OutputsForce&OUT_R1) 
+			lcd.setCursor(8,1); 
+			if(OutputsForce&BIT_R1) 
 			{
 				Pwm1+=(encoderCount()*5);
 				if(Pwm1<0) Pwm1=0;
@@ -395,10 +426,10 @@ void outprintset()
 			}
 			else encoderCount();
 			break; }
-		case 2 : { lcd.setCursor(3,1); outset(OUT_R2, encoderCount()); break; }
-		case 3 : { lcd.setCursor(3,2); outset(OUT_R3, encoderCount()); break; }
-		case 4 : { lcd.setCursor(3,3); outset(OUT_R4, encoderCount()); break; }
-		case 5 : { lcd.setCursor(15,3); outset(OUT_R5, encoderCount()); break; }
+		case 2 : { lcd.setCursor(3,2); outset(BIT_R2, encoderCount()); break; }
+		case 3 : { lcd.setCursor(3,3); outset(BIT_R3, encoderCount()); break; }
+		case 4 : { lcd.setCursor(15,2); outset(BIT_R4, encoderCount()); break; }
+		case 5 : { lcd.setCursor(15,3); outset(BIT_R5, encoderCount()); break; }
 	}
 }
 void menu_forceoutputs()
@@ -408,10 +439,10 @@ void menu_forceoutputs()
 		lcd.clear();
 		Pos=0;
 		encoderCount();
-		lcd<<F("R1:");
-		lcd.setCursor(0,1); lcd<<F("R2:");
-		lcd.setCursor(0,2); lcd<<F("R3:");
-		lcd.setCursor(0,3); lcd<<F("R4:         R5:");
+		lcd<<F("Forcage relais");
+		lcd.setCursor(0,1); lcd<<F("R1:");
+		lcd.setCursor(0,2); lcd<<F("R2:         R4:");
+		lcd.setCursor(0,3); lcd<<F("R3:         R5:");
 		lcd.blink();
 		outprintset();
 	}
@@ -432,11 +463,62 @@ void menu_forceoutputs()
 		if (Pos>5) Pos=0;
 		outprintset();
 	}
-	
+
 	//redraw twice to get correct value on screen, because value is changed after
 	//redraw in timeprintset()
 	if(Counter!=0) {outprintset();outprintset();} 
 }
+
+void Tprintset(bool dblclick=false)
+{
+	lcd.clear();
+	lcd<<F("Forcage temp.(")<<(char)-33<<F("C)1/2"); //-33 is ° on this lcd
+
+	if(dblclick) TForce[Pos] ^= 1; //toggle the first bit
+	
+	if(TForce[Pos]) T[Pos]+=(encoderCount()*0.5);
+	else encoderCount();
+	
+	for(byte i=0;i<6;i++)
+	{
+		if(i<3) lcd.setCursor(0,i+1); 
+		else lcd.setCursor(10,i-2);
+		lcd<<F("T")<<i+1<<F(":"); 
+		if(!TForce[i]) lcd<<F("AUTO "); 
+		else printT(i);
+	}
+	
+	if(Pos<3) lcd.setCursor(3,Pos+1);
+	else lcd.setCursor(13,Pos-2);
+
+}
+void menu_forceT()
+{
+ 	if (menu.isFirstRun()) 
+	{
+		Pos=0;
+		encoderCount();
+		lcd.blink();
+		Tprintset();
+	}
+	
+	if(btn.state(BTN_LONGCLICK))
+	{
+		lcd.noBlink();
+		menu.next(menu_start3);
+	}
+	
+	if(btn.state(BTN_CLICK))
+	{
+		Pos++;
+		if (Pos>5) Pos=0;
+		Tprintset();
+	}
+	
+	if(btn.state(BTN_DOUBLECLICK)) Tprintset(true);
+
+	if(Counter!=0) Tprintset();
+} 
 
 void timeprintset()
 {
@@ -518,7 +600,17 @@ void menu_setclock()
 
 void menu_setsensors()
 {
-	if (menu.isFirstRun()) lcd.clear();
+	static char truc;
+	if (menu.isFirstRun()) {
+		lcd.clear(); lcd.blink();
+	}
+	
+	if(Counter!=0) 
+	{
+		truc+=encoderCount();
+		lcd<<_DEC(truc)<<" "<<truc;
+	}
+	
 	if(btn.state(BTN_LONGCLICK))
 		menu.next(menu_param);	
 }
