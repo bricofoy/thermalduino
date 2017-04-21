@@ -14,6 +14,7 @@
 #include <yasm.h>
 #include <btn.h>
 #include <DS1307.h>
+#include <SPI.h>
 #include <SdFat.h>
 #include <Streaming.h>
 
@@ -30,7 +31,11 @@ bool TForce[SENSOR_NBR];
 
 #define PIN_ONE_WIRE_BUS A3
 
-#define DELAY_MENU_BACK	120E3	//2 minutes
+#define DELAY_MENU_BACK			120E3	//2 minutes
+#define DELAY_MENU_EXIT_PARAM 	15E3	//15 seconds
+#define DELAY_MENU_REFRESH		1500
+#define DELAY_LOG_PERIOD		5E3	
+#define DELAY_SDINIT			20E3
 
 //encoder pins
 #define PIN_A	6
@@ -41,6 +46,12 @@ char Counter=0;
 
 //SD card CS pin on the robotdyn shield is pin 9
 #define PIN_SD_CS	9
+#define LOGFILENAME	"datalog.txt"
+// File system object.
+SdFat sd;
+// Log file.
+SdFile logfile;
+bool SdOK=false,FileOK=false;
 
 //outputs
 #define PIN_PWM1	10	//solar pump speed signal
@@ -50,6 +61,7 @@ char Counter=0;
 #define PIN_R4		2	//heating water temp servo on
 #define PIN_R5		A0	//boiler pump
 
+#define RELAYS_NBR 5
 byte Outputs=0;
 byte OutputsForce=0;
 #define BIT_R1	1
@@ -74,6 +86,7 @@ LiquidCrystal_I2C lcd(0x20, 4, 5, 6, 0, 1, 2, 3, 7, NEGATIVE);
 
 YASM menu;
 YASM gettemp;
+YASM datalog;
 YASM solar;
 YASM heat;
 YASM boiler;
@@ -112,6 +125,7 @@ void setup(void)
   
   menu.next(menu_start); 
   gettemp.next(gettemp_request);
+  datalog.next(datalog_start);
 }
 
 void loop(void) 
@@ -125,6 +139,7 @@ void loop(void)
 	solar.run();
 	heat.run();
 	boiler.run();
+	datalog.run();
 	outputsWrite();
 }
 
@@ -217,11 +232,11 @@ void printR(byte bit)
 {
 	if(OutputsForce&bit) lcd<<F("F");
 	else lcd<<F(" ");
-	lcd<<(Outputs&bit);
+	lcd<<((Outputs&bit)&&1);
 }
 	
 
-///////////gettemp state machine/////////
+////////////////////////gettemp state machine///////////////////////////////////
 //
 void gettemp_request()
 {
@@ -246,12 +261,80 @@ void gettemp_read()
 	else gettemp.next(gettemp_request);
 }
 
+/////////////////////////datalog state machine//////////////////////////////////
+void datalog_wait()
+{
+	if(datalog.elapsed(DELAY_LOG_PERIOD))
+		datalog.next(datalog_write);
+}
+void datalog_wait_card()
+{
+	if(datalog.elapsed(DELAY_SDINIT))
+		datalog.next(datalog_write);
+}
+void datalog_start()
+{
+	SdOK=sd.begin(PIN_SD_CS, SPI_HALF_SPEED);
+	if(!SdOK)
+	{
+		datalog.next(datalog_wait_card);
+		return;
+	}
+ 	
+	FileOK=logfile.open(LOGFILENAME, O_RDWR | O_CREAT | O_AT_END);
+	if(!FileOK)
+	{
+		datalog.next(datalog_wait_card);
+		return;
+	}
 
-///////////menu state machine////////////
+	logfile<<_endl<<F("date;");
+	for(byte i=0;i<SENSOR_NBR;i++) logfile << F("F;T")<<i+1<<F(";");
+	logfile<<F("Pwm;");
+	for(byte i=0;i<RELAYS_NBR;i++) logfile << F("F;R")<<i+1<<F(";");
+	logfile<<_endl;
+	logfile.flush();
+	logfile.close();
+	datalog.next(datalog_write);
+				
+}
+
+void datalog_write()
+{
+ 	FileOK=logfile.open(LOGFILENAME, O_RDWR | O_CREAT | O_AT_END);
+	if(!FileOK)
+	{
+		SdOK=false;
+		datalog.next(datalog_start);
+		return;
+	}
+	
+	logfile<<RTC.getS(DS1307_STR_DATE,0)<<F(" ")<<RTC.getS(DS1307_STR_TIME,0)<<F(";");
+	for(byte i=0;i<SENSOR_NBR;i++) 
+	{
+		if(TForce[i]) logfile<<F("F");
+		logfile << F(";")<<T[i] <<F(";");
+	}
+	logfile<<Pwm1<<F(";");
+	for(byte i=0;i<RELAYS_NBR;i++) 
+	{
+		if(OutputsForce&(2^i)) logfile<<F("F");
+		logfile << F(";")<< ((Outputs&(2^i))&&1) << F(";");
+	}
+	logfile<<_endl;
+	logfile.flush();
+	logfile.close();
+	datalog.next(datalog_wait);
+
+}
+	
+
+//////////////////////////menu state machine////////////////////////////////////
 char Pos;
 
 void menu_start()
 {
+	bool flag=false;
 	if (menu.isFirstRun())
 	{
 		lcd.clear();
@@ -259,18 +342,30 @@ void menu_start()
 		lcd.setCursor(0,1); lcd.print(F("Capteur"));
 		lcd.setCursor(0,2); lcd.print(F("Int       Ext"));
 		lcd.setCursor(0,3); lcd.print(F("Chauffage"));
+		flag=true;
 	}
  	
-	if(menu.periodic(1500)) 
+	if(menu.periodic(DELAY_MENU_REFRESH)||flag) 
 	{
 		lcd.setCursor(7,0); printT(1);
-		lcd.setCursor(14,0); printT(3);
+		lcd.setCursor(13,0); printT(3);
 
 		lcd.setCursor(7,1); printT(0);
 		lcd.setCursor(15,1); if(OutputsForce&BIT_R1) lcd<<F("F"); lcd<<Pwm1<<F("%");
 		
 		lcd.setCursor(3,2); printT(7);
 		lcd.setCursor(13,2); printT(6);
+		
+		if(!FileOK)
+		{
+			lcd.setCursor(19,0);
+			lcd<<F("E");
+		}
+		else
+		{
+			lcd.setCursor(19,0);
+			lcd<<F(" ");
+		}
 	}
  
 	if(encoderCount()>0)
@@ -282,6 +377,7 @@ void menu_start()
 
 void menu_start2()
 {
+	bool flag=false;
 	if (menu.isFirstRun())
 	{
 		lcd.clear();
@@ -289,9 +385,10 @@ void menu_start2()
 		lcd.setCursor(0,1); lcd.print(F("T2:       T3:"));
 		lcd.setCursor(0,2); lcd.print(F("T4:"));
 		lcd.setCursor(0,3); lcd.print(F("R1:"));
+		flag=true;
 	}	
 	
-	if(menu.periodic(1500))
+	if(menu.periodic(DELAY_MENU_REFRESH)||flag) 
 	{
 		lcd.setCursor(3,0); printT(0); lcd.setCursor(13,0); printT(9);
 		lcd.setCursor(3,1); printT(1); lcd.setCursor(13,1); printT(2); 
@@ -310,6 +407,7 @@ void menu_start2()
 
 void menu_start3()
 {
+	bool flag=false;
 	if (menu.isFirstRun())
 	{
 		lcd.clear();
@@ -317,9 +415,10 @@ void menu_start3()
 		lcd.setCursor(0,1); lcd.print(F("T7:       T8:"));
 		lcd.setCursor(0,2); lcd.print(F("R2:   R3:   R4:"));
 		lcd.setCursor(0,3); lcd.print(F("T9:         R5:"));
+		flag=true;
 	}
 	
-	if(menu.periodic(1500))
+	if(menu.periodic(DELAY_MENU_REFRESH)||flag) 
 	{
 		lcd.setCursor(3,0); printT(4); lcd.setCursor(13,0); printT(5);
 		lcd.setCursor(3,1); printT(6); lcd.setCursor(13,1); printT(7);
@@ -357,8 +456,8 @@ void menu_param()
 	{
 		lcd.setCursor(0,Pos); lcd.print(F(" "));
 		Pos+=encoderCount();
-		if (Pos>3) Pos=0;
-		if (Pos<0) Pos=3;
+		if (Pos>3) menu.next(menu_param2);
+		if (Pos<0) Pos=0;
 		lcd.setCursor(0,Pos); lcd<<(char)126;
 	}
 	if(btn.state(BTN_CLICK))
@@ -370,7 +469,41 @@ void menu_param()
 			case 3 : { menu.next(menu_setheat); break; }
 		}
 				
-	if(btn.state(BTN_LONGCLICK) || menu.elapsed(15E3))
+	if(btn.state(BTN_LONGCLICK) || menu.elapsed(DELAY_MENU_EXIT_PARAM))
+		menu.next(menu_start);
+}
+
+void menu_param2()
+{	
+	if (menu.isFirstRun()) 
+	{
+		lcd.clear();
+		lcd<<(char)126<<F("Reglages horloge");
+		lcd.setCursor(1,1); lcd<<F("Reglages sondes");
+		lcd.setCursor(1,2); lcd<<F("Reglages solaire");
+		lcd.setCursor(1,3); lcd<<F("Reglages chauffage");
+		Pos=0;
+	}
+
+
+	if (Counter!=0)
+	{
+		lcd.setCursor(0,Pos); lcd.print(F(" "));
+		Pos+=encoderCount();
+		if (Pos>3) Pos=3;
+		if (Pos<0) menu.next(menu_param);
+		lcd.setCursor(0,Pos); lcd<<(char)126;
+	}
+	if(btn.state(BTN_CLICK))
+		switch (Pos)
+		{
+			case 0 : { menu.next(menu_setclock); break; }
+			case 1 : { menu.next(menu_setsensors); break; }
+			case 2 : { menu.next(menu_setsolar); break; }
+			case 3 : { menu.next(menu_setheat); break; }
+		}
+				
+	if(btn.state(BTN_LONGCLICK) || menu.elapsed(DELAY_MENU_EXIT_PARAM))
 		menu.next(menu_start);
 }
 
@@ -447,14 +580,10 @@ void menu_forceoutputs()
 		outprintset();
 	}
 	
-	//refresh display when no user input only each 4sec because faster redraw
-	//takes too much time and then encoder is not responsive
-	//if (menu.periodic(4E3)) outprintset();
-	
 	if(btn.state(BTN_LONGCLICK))
 	{
 		lcd.noBlink();
-		menu.next(menu_start3);
+		menu.next(menu_start);
 	}
 	
 	if(btn.state(BTN_CLICK))
@@ -465,7 +594,7 @@ void menu_forceoutputs()
 	}
 
 	//redraw twice to get correct value on screen, because value is changed after
-	//redraw in timeprintset()
+	//redraw in outprintset()
 	if(Counter!=0) {outprintset();outprintset();} 
 }
 
@@ -474,7 +603,11 @@ void Tprintset(bool dblclick=false)
 	lcd.clear();
 	lcd<<F("Forcage temp.(")<<(char)-33<<F("C)1/2"); //-33 is ° on this lcd
 
-	if(dblclick) TForce[Pos] ^= 1; //toggle the first bit
+	if(dblclick) 
+	{
+		TForce[Pos] ^= 1; //toggle the first bit
+		if(TForce[Pos]&&(T[Pos]==-127)) T[Pos]=0;
+	}
 	
 	if(TForce[Pos]) T[Pos]+=(encoderCount()*0.5);
 	else encoderCount();
@@ -505,7 +638,7 @@ void menu_forceT()
 	if(btn.state(BTN_LONGCLICK))
 	{
 		lcd.noBlink();
-		menu.next(menu_start3);
+		menu.next(menu_start);
 	}
 	
 	if(btn.state(BTN_CLICK))
@@ -540,27 +673,27 @@ void timeprintset()
 	{
 		case 0 : { 	
 			lcd.setCursor(6,1); 
-			RTC.set(DS1307_HR,(DateTime.hour+=encoderCount())); 
+			RTC.set(DS1307_HR,RTC.get(DS1307_HR, 0)+encoderCount()); 
 			break; }
 		case 1 : { 
 			lcd.setCursor(9,1); 
-			RTC.set(DS1307_MIN,(DateTime.minute+=encoderCount()));
+			RTC.set(DS1307_MIN,RTC.get(DS1307_MIN, 0)+encoderCount());
 			break; }
 		case 2 : { 
 			lcd.setCursor(12,1); 
-			RTC.set(DS1307_SEC,(DateTime.second+=encoderCount()));
+			RTC.set(DS1307_SEC,RTC.get(DS1307_SEC,1)+encoderCount());
 			break; }
 		case 3 : { 
 			lcd.setCursor(5,2); 
-			RTC.set(DS1307_DOM,(DateTime.day+=encoderCount())); 
+			RTC.set(DS1307_DOM,RTC.get(DS1307_DOM,0)+encoderCount()); 
 			break; }
 		case 4 : { 
 			lcd.setCursor(8,2); 
-			RTC.set(DS1307_MTH,(DateTime.month+=encoderCount())); 
+			RTC.set(DS1307_MTH,RTC.get(DS1307_MTH,0)+encoderCount()); 
 			break; }	
 		case 5 : { 
 			lcd.setCursor(13,2); 
-			RTC.set(DS1307_YR, ((DateTime.year+=encoderCount())-2000) );
+			RTC.set(DS1307_YR,((RTC.get(DS1307_YR,0)+encoderCount())-2000) );
 			break; }
 	}
 }
