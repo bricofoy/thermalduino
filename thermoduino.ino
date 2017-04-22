@@ -143,6 +143,13 @@ void loop(void)
 	outputsWrite();
 }
 
+//from http://jeelabs.org/2011/05/22/atmega-memory-use/
+int freeRam () {
+  extern int __heap_start, *__brkval; 
+  int v; 
+  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
+}
+
 void setOutput(byte pin, bool state)
 {
 	if(!(OutputsForce&pin))
@@ -153,6 +160,7 @@ void setOutput(byte pin, bool state)
 
 void outputsWrite()
 {
+	// ! because relays are active low
 	digitalWrite(PIN_R1,!(Outputs&BIT_R1));
 	digitalWrite(PIN_R2,!(Outputs&BIT_R2));
 	digitalWrite(PIN_R3,!(Outputs&BIT_R3));
@@ -330,7 +338,7 @@ void datalog_write()
 	
 
 //////////////////////////menu state machine////////////////////////////////////
-char Pos;
+char Pos,Page;
 
 void menu_start()
 {
@@ -366,6 +374,8 @@ void menu_start()
 			lcd.setCursor(19,0);
 			lcd<<F(" ");
 		}
+		
+		lcd.setCursor(15,3); lcd<<freeRam();
 	}
  
 	if(encoderCount()>0)
@@ -478,10 +488,10 @@ void menu_param2()
 	if (menu.isFirstRun()) 
 	{
 		lcd.clear();
-		lcd<<(char)126<<F("Reglages horloge");
-		lcd.setCursor(1,1); lcd<<F("Reglages sondes");
-		lcd.setCursor(1,2); lcd<<F("Reglages solaire");
-		lcd.setCursor(1,3); lcd<<F("Reglages chauffage");
+		lcd<<(char)126<<F("Forcage relais");
+		lcd.setCursor(1,1); lcd<<F("Forcage temperatures");
+		lcd.setCursor(1,2); lcd<<F("xxx");
+		lcd.setCursor(1,3); lcd<<F("xxxx");
 		Pos=0;
 	}
 
@@ -497,10 +507,10 @@ void menu_param2()
 	if(btn.state(BTN_CLICK))
 		switch (Pos)
 		{
-			case 0 : { menu.next(menu_setclock); break; }
-			case 1 : { menu.next(menu_setsensors); break; }
-			case 2 : { menu.next(menu_setsolar); break; }
-			case 3 : { menu.next(menu_setheat); break; }
+			case 0 : { menu.next(menu_forceoutputs); Pos=0; break; }
+			case 1 : { menu.next(menu_forceT); Pos=0; break; }
+			case 2 : { break; }
+			case 3 : { break; }
 		}
 				
 	if(btn.state(BTN_LONGCLICK) || menu.elapsed(DELAY_MENU_EXIT_PARAM))
@@ -565,6 +575,8 @@ void outprintset()
 		case 5 : { lcd.setCursor(15,3); outset(BIT_R5, encoderCount()); break; }
 	}
 }
+//TODO: changerle comportement pour etre consistant avec le menu et le forcage
+//des températures: tourner pour défiler, click pour éditer et doubleclick auto
 void menu_forceoutputs()
 {
  	if (menu.isFirstRun()) 
@@ -598,59 +610,80 @@ void menu_forceoutputs()
 	if(Counter!=0) {outprintset();outprintset();} 
 }
 
-void Tprintset(bool dblclick=false)
+void Tprintset()
 {
 	lcd.clear();
-	lcd<<F("Forcage temp.(")<<(char)-33<<F("C)1/2"); //-33 is ° on this lcd
-
-	if(dblclick) 
-	{
-		TForce[Pos] ^= 1; //toggle the first bit
-		if(TForce[Pos]&&(T[Pos]==-127)) T[Pos]=0;
-	}
-	
-	if(TForce[Pos]) T[Pos]+=(encoderCount()*0.5);
-	else encoderCount();
+	//-33 is ° on this lcd
+	lcd<<F("Forcage temp.(")<<(char)-33<<F("C)")<<(Page+1)<<F("/");
+	lcd<<(SENSOR_NBR/6+((SENSOR_NBR%6)&&1)); 
 	
 	for(byte i=0;i<6;i++)
 	{
+		if(Page*6+i>=SENSOR_NBR) break;
 		if(i<3) lcd.setCursor(0,i+1); 
 		else lcd.setCursor(10,i-2);
-		lcd<<F("T")<<i+1<<F(":"); 
-		if(!TForce[i]) lcd<<F("AUTO "); 
-		else printT(i);
+		lcd<<F("T")<<(Page*6+i+1)<<F(":"); 
+		if(!TForce[Page*6+i]) lcd<<F("AUTO "); 
+		else printT(Page*6+i);
 	}
 	
-	if(Pos<3) lcd.setCursor(3,Pos+1);
-	else lcd.setCursor(13,Pos-2);
-
+	if((Pos-Page*6)<3) lcd.setCursor(1,Pos+1-Page*6);
+	else lcd.setCursor(11,Pos-2-Page*6);
+	if(Pos>8) lcd.moveCursorRight();
 }
+
+void menu_forceT_edit()
+{
+	if(menu.isFirstRun())
+	{
+		TForce[Pos] |= 1; //set Force bit 
+		if(T[Pos]==-127) T[Pos]=0;
+		Tprintset(); lcd.moveCursorRight(); lcd.moveCursorRight();		
+	}
+		
+	switch (btn.state())
+	{
+		case BTN_CLICK : { menu.next(menu_forceT); return; }
+		case BTN_LONGCLICK : { lcd.noBlink(); menu.next(menu_start); return; }
+		case BTN_DOUBLECLICK : {
+			TForce[Pos] &= 0; //unset the Force bit, back to AUTO
+			menu.next(menu_forceT);	return;	}
+	}
+
+	//if no button action just edit the value
+	if(Counter!=0) 
+	{
+		T[Pos]+=(encoderCount()*0.5);
+		Tprintset(); lcd.moveCursorRight(); lcd.moveCursorRight();
+	}
+}
+
+
 void menu_forceT()
 {
  	if (menu.isFirstRun()) 
 	{
-		Pos=0;
+		//Pos=Page=0; 
 		encoderCount();
 		lcd.blink();
 		Tprintset();
 	}
-	
-	if(btn.state(BTN_LONGCLICK))
+
+	switch (btn.state())
 	{
-		lcd.noBlink();
-		menu.next(menu_start);
+		case BTN_CLICK : { menu.next(menu_forceT_edit); break; }
+		case BTN_LONGCLICK : { lcd.noBlink(); menu.next(menu_start); break; }
+		//case BTN_DOUBLECLICK : break;
 	}
-	
-	if(btn.state(BTN_CLICK))
+
+	if(Counter!=0) 
 	{
-		Pos++;
-		if (Pos>5) Pos=0;
+		Pos+=encoderCount();
+		if (Pos>=SENSOR_NBR) Pos=SENSOR_NBR-1;
+		if (Pos<0) Pos=0;
+		Page=(int)Pos/6;
 		Tprintset();
 	}
-	
-	if(btn.state(BTN_DOUBLECLICK)) Tprintset(true);
-
-	if(Counter!=0) Tprintset();
 } 
 
 void timeprintset()
