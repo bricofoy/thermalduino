@@ -166,16 +166,12 @@ void setup(void)
   pinMode(PIN_PWM1,OUTPUT);
   outputsWrite();
   
-  sensors.begin(); // Start up the dallas library
-  sensors.setWaitForConversion(false); //don't wait !
   
-  loadSensorsAddresses(); //fill the addresses array with the values in EEPROM
-  setSensorsResolution();
   
   loadParams();//get all the parameters from eeprom
   
   menu.next(menu_start); 
-  gettemp.next(gettemp_request);
+  gettemp.next(gettemp_start);
   datalog.next(datalog_start);
 }
 
@@ -330,6 +326,15 @@ void printR(byte bit)
 
 ////////////////////////gettemp state machine///////////////////////////////////
 //
+void gettemp_start()
+{
+	sensors.begin(); // Start up the dallas library
+	sensors.setWaitForConversion(false); //don't wait !
+	loadSensorsAddresses(); //fill the addresses array with the values in EEPROM
+	setSensorsResolution();
+	gettemp.next(gettemp_request);
+}	
+
 void gettemp_request()
 {
 	sensors.requestTemperatures();
@@ -849,21 +854,92 @@ void menu_setclock()
 
 void menu_setsensors()
 {
-	static char truc;
 	if (menu.isFirstRun()) 
 	{
-		lcd.clear(); 
+		gettemp.stop(); //stops main temp read process so it will not interfere
+		lcd.clear();
+
+		lcd<<F("Enregistrement sonde");
+		lcd.setCursor(5,1); lcd<< F("T")<<(byte)Pos;
+		lcd.setCursor(0,2); lcd<< F("Raccorder uniquement");
+		lcd.setCursor(0,3); lcd<< F("la sonde a modifier");
+		
+		lcd.setCursor(6,1); lcd.blink();
+		
+	}	
+	
+	if (Counter!=0) 
+	{
+		Pos+=encoderCount();
+		if(Pos<1) Pos=1;
+		if(Pos>SENSOR_NBR) Pos=SENSOR_NBR;
+		lcd.setCursor(6,1); lcd<<(byte)Pos;
+		if(Pos<10) lcd<<F(" ");
 	}
 	
-	if(Counter!=0) encoderCount();
-	
-	
-	
-	
+	if(btn.state(BTN_CLICK))
+		menu.next(menu_setsensors2);	
 	
 	if(btn.state(BTN_LONGCLICK))
-		menu.next(menu_param);	
+	{
+		menu.next(menu_param);
+		gettemp.next(gettemp_start);
+	}
 }
+
+void menu_setsensors2()
+{
+	if(menu.periodic(1500))
+	{
+		lcd.clear();
+		lcd<<F("Sonde T")<<(byte)Pos;
+		lcd.setCursor(0,1);
+		sensors.getDeviceCount();
+		if (!sensors.getAddress(sensorAddress[Pos-1], 0)) lcd<<F("erreur sonde");
+		else {
+			sensors.setResolution(sensorAddress[Pos-1], TEMPERATURE_RESOLUTION);
+			sensors.requestTemperatures();
+					
+			//print sensor address
+			for (uint8_t i = 0; i < 8; i++){
+				// zero pad the address if necessary
+				if (sensorAddress[Pos-1][i] < 16) lcd<<F("0");
+				lcd<<_HEX(sensorAddress[Pos-1][i]);
+			}
+			delay(750/(1<<(12-TEMPERATURE_RESOLUTION)));
+			lcd.setCursor(12,0);
+			lcd<<sensors.getTempC(sensorAddress[Pos-1]);
+		}
+	}
+	
+	if(btn.state(BTN_CLICK))
+		menu.next(menu_setsensors3);	
+	
+	if(btn.state(BTN_LONGCLICK))
+		menu.next(menu_setsensors);	
+}
+
+void menu_setsensors3()
+{
+	if (menu.isFirstRun()) 	
+	{
+		lcd.setCursor(0,2); 
+		lcd<<F("ENREGISTRER ?");
+	}
+	
+	if(btn.state(BTN_CLICK))
+	{
+		lcd.setCursor(0,3); lcd<<F("ENREGISTREMENT...");
+		delay(700);
+		EEPROM.put(EEPROM_SENSOR_ADR+(sizeof(DeviceAddress)*(Pos-1)), sensorAddress[Pos-1]);
+		menu.next(menu_setsensors);
+	}
+	
+	if(btn.state(BTN_LONGCLICK))
+		menu.next(menu_setsensors);
+}
+		
+			
 
 void arrow(byte max=6)
 {
