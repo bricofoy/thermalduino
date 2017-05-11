@@ -25,7 +25,7 @@
 // arrays to hold sensor addresses and temperatures
 DeviceAddress sensorAddress[SENSOR_NBR];
 float T[SENSOR_NBR];
-float Offset[SENSOR_NBR];
+//float Offset[SENSOR_NBR];
 bool TForce[SENSOR_NBR];
  
 #define TEMPERATURE_RESOLUTION 9 //0,5°C sensor acccuracy.
@@ -46,7 +46,7 @@ char Counter=0;
 
 
 //SD card CS pin on the robotdyn shield is pin 9
-#define PIN_SD_CS	9
+#define PIN_SD_CS	53
 #define LOGFILENAME	"datalog.txt"
 // File system object.
 SdFat sd;
@@ -55,74 +55,74 @@ SdFile logfile;
 bool SdOK=false,FileOK=false;
 
 //outputs
-#define PIN_PWM1	10	//solar pump speed signal
-#define PIN_R1		5	//solar pump
-#define PIN_R2		4	//heating pump
-#define PIN_R3		3	//heating water temp servo +/-
-#define PIN_R4		2	//heating water temp servo on
-#define PIN_R5		A0	//boiler pump
+#define PIN_PWM0	10	//solar pump speed signal
+#define PIN_R0		5	//solar pump
+#define PIN_R1		4	//heating pump
+#define PIN_R2		3	//heating water temp servo +/-
+#define PIN_R3		2	//heating water temp servo on
+#define PIN_R4		A0	//boiler pump
 
 #define RELAYS_NBR 5
 byte R=0;
 byte RF=0;
-#define BIT_R1	1
-#define BIT_R2	2
-#define BIT_R3	4
-#define BIT_R4	8
-#define BIT_R5	16
-byte Pwm1=0;
+#define BIT_R0	1
+#define BIT_R1	2
+#define BIT_R2	4
+#define BIT_R3	8
+#define BIT_R4	16
+byte Pwm0=0;
 
 
-#define NUM_S1	3
-#define NUM_S2	5
+#define NUM_S0	3
+#define NUM_S1	5
+#define NUM_S2	4
 #define NUM_S3	4
-#define NUM_S4	4
 
-#define NUM_C1	5
-#define NUM_C2	3
+#define NUM_C0	5
+#define NUM_C1	3
 //arrays wich store the Sx parameters, one for each section
-char S1[NUM_S1],S2[NUM_S2],S3[NUM_S3],S4[NUM_S4];
+char S0[NUM_S0],S1[NUM_S1],S2[NUM_S2],S3[NUM_S3];
 //array with the numbers of elements in each of the parameter arrays
-const char Sn[]={NUM_S1,NUM_S2,NUM_S3,NUM_S4};
+const char Sn[]={NUM_S0,NUM_S1,NUM_S2,NUM_S3};
 //same thing for the Cx params
-char C1[NUM_C1],C2[NUM_C2];
-const char Cn[]={NUM_C1,NUM_C2};
+char C0[NUM_C0],C1[NUM_C1];
+const char Cn[]={NUM_C0,NUM_C1};
 //pointer to the array of arrays storing the parameters
-char *S[]={S1,S2,S3,S4};
-char *C[]={C1,C2};
+char *S[]={S0,S1,S2,S3};
+char *C[]={C0,C1};
 //arrays of strings with details for each parameter
-const char *St1[]={
+const char *St0[]={
 	"Consigne bas ballon",
 	"Differentiel demarra",
 	"Differentiel arret"};
-const char *St2[]={	
+const char *St1[]={	
 	"PWM max %",
 	"PWM min %",
 	"Increment %",
 	"Periode cycle x10s",
 	"Difference voulue"}; 
-const char *St3[]={	
+const char *St2[]={	
 	"Demarrage periodique",
 	"T mini capteur",
 	"Duree impulsions (s)",
 	"Periode (x10s)"}; 
-const char *St4[]={	
+const char *St3[]={	
 	"Protection surchauff",
 	"T max capteur",
 	"Differential arret",
 	"T max bas ballon"}; 	
-const char **St[]={St1,St2,St3,St4};
-const char *Ct1[]={
+const char **St[]={St0,St1,St2,St3};
+const char *Ct0[]={
 	"ON/OFF",
 	"T jour",
 	"T nuit",
 	"H jour",
 	"H nuit"};
-const char *Ct2[]={	
+const char *Ct1[]={	
 	"Tps mvmt complet s",
 	"Tps mvmt cycle s",
 	"Periode cycle x10s"}; 
-const char **Ct[]={Ct1,Ct2};
+const char **Ct[]={Ct0,Ct1};
 
 // Setup a oneWire instance to communicate with any OneWire devices
 OneWire oneWire(PIN_ONE_WIRE_BUS);
@@ -137,6 +137,7 @@ YASM menu;
 YASM gettemp;
 YASM datalog;
 YASM solar;
+YASM solarRun;
 YASM heat;
 YASM boiler;
 BTN btn;
@@ -158,12 +159,12 @@ void setup(void)
   pinMode(PIN_B,INPUT_PULLUP);  
   pinMode(PIN_BTN,INPUT_PULLUP);
   
+  pinMode(PIN_R0,OUTPUT);
   pinMode(PIN_R1,OUTPUT);
   pinMode(PIN_R2,OUTPUT);
   pinMode(PIN_R3,OUTPUT);
   pinMode(PIN_R4,OUTPUT);
-  pinMode(PIN_R5,OUTPUT);
-  pinMode(PIN_PWM1,OUTPUT);
+  pinMode(PIN_PWM0,OUTPUT);
   outputsWrite();
   
   
@@ -173,11 +174,12 @@ void setup(void)
   menu.next(menu_start); 
   gettemp.next(gettemp_start);
   datalog.next(datalog_start);
+  solar.next(solar_wait);
 }
 
 void loop(void) 
 {
-	R &= RF; //erase all output bits exept forced ones
+	R &= RF; //erase all output bits except forced ones
 	RTC.get(&DateTime,true);
 	btn.update(!digitalRead(PIN_BTN)); // ! because btn switch to gnd
 	encoderRead();
@@ -187,6 +189,7 @@ void loop(void)
 	heat.run();
 	boiler.run();
 	datalog.run();
+	//R |= RF; //
 	outputsWrite();
 }
 
@@ -208,12 +211,12 @@ void setOutput(byte pin, bool state)
 void outputsWrite()
 {
 	// ! because relays are active low
+	digitalWrite(PIN_R0,!(R&BIT_R0));
 	digitalWrite(PIN_R1,!(R&BIT_R1));
 	digitalWrite(PIN_R2,!(R&BIT_R2));
 	digitalWrite(PIN_R3,!(R&BIT_R3));
 	digitalWrite(PIN_R4,!(R&BIT_R4));
-	digitalWrite(PIN_R5,!(R&BIT_R5));
-	analogWrite(PIN_PWM1,Pwm1);
+	analogWrite(PIN_PWM0,Pwm0);
 }
 
 void loadSensorsAddresses()
@@ -224,34 +227,35 @@ void loadSensorsAddresses()
 void saveParams()
 {
 	int address = EEPROM_PARAM_ADR;
+	EEPROM.put(address,S0);
+	address += sizeof(S0);
 	EEPROM.put(address,S1);
 	address += sizeof(S1);
 	EEPROM.put(address,S2);
 	address += sizeof(S2);
 	EEPROM.put(address,S3);
 	address += sizeof(S3);
-	EEPROM.put(address,S4);
-	address += sizeof(S4);
+	EEPROM.put(address,C0);
+	address += sizeof(C0);	
 	EEPROM.put(address,C1);
-	address += sizeof(C1);	
-	EEPROM.put(address,C2);
-	//address += sizeof(C2);
+	//address += sizeof(C1);
 }
 void loadParams()
 {
 	int address = EEPROM_PARAM_ADR;
+	EEPROM.get(address,S0);
+	address += sizeof(S0);
 	EEPROM.get(address,S1);
 	address += sizeof(S1);
 	EEPROM.get(address,S2);
 	address += sizeof(S2);
 	EEPROM.get(address,S3);
 	address += sizeof(S3);
-	EEPROM.get(address,S4);
-	address += sizeof(S4);
+
+	EEPROM.get(address,C0);
+	address += sizeof(C0);	
 	EEPROM.get(address,C1);
-	address += sizeof(C1);	
-	EEPROM.get(address,C2);
-	//address += sizeof(C2);
+	//address += sizeof(C1);
 }
 
 void setSensorsResolution()
@@ -412,7 +416,7 @@ void datalog_write()
 		if(TForce[i]) logfile<<F("F");
 		logfile << F(";")<<T[i] <<F(";");
 	}
-	logfile<<Pwm1<<F(";");
+	logfile<<Pwm0<<F(";");
 	for(byte i=0;i<RELAYS_NBR;i++) 
 	{
 		if(RF&(2^i)) logfile<<F("F");
@@ -431,7 +435,7 @@ char Pos,Page;
 
 void menu_start()
 {
-	bool flag=false;
+	
 	if (menu.isFirstRun())
 	{
 		lcd.clear();
@@ -439,16 +443,16 @@ void menu_start()
 		lcd.setCursor(0,1); lcd.print(F("Capteur"));
 		lcd.setCursor(0,2); lcd.print(F("Int       Ext"));
 		lcd.setCursor(0,3); lcd.print(F("Chauffage"));
-		flag=true;
+		
 	}
  	
-	if(menu.periodic(DELAY_MENU_REFRESH)||flag) 
+	if(menu.periodic(DELAY_MENU_REFRESH)) 
 	{
 		lcd.setCursor(7,0); printT(1);
 		lcd.setCursor(13,0); printT(3);
 
 		lcd.setCursor(7,1); printT(0);
-		lcd.setCursor(15,1); if(RF&BIT_R1) lcd<<F("F"); lcd<<Pwm1<<F("%");
+		lcd.setCursor(15,1); if(RF&BIT_R0) lcd<<F("F"); lcd<<Pwm0<<F("%");
 		
 		lcd.setCursor(3,2); printT(7);
 		lcd.setCursor(13,2); printT(6);
@@ -476,23 +480,23 @@ void menu_start()
 
 void menu_start2()
 {
-	bool flag=false;
+	
 	if (menu.isFirstRun())
 	{
 		lcd.clear();
-		lcd.print(F("T1:      T10:"));
-		lcd.setCursor(0,1); lcd.print(F("T2:       T3:"));
-		lcd.setCursor(0,2); lcd.print(F("T4:"));
-		lcd.setCursor(0,3); lcd.print(F("R1:"));
-		flag=true;
+		lcd.print(F("T0:      T9:"));
+		lcd.setCursor(0,1); lcd.print(F("T1:       T2:"));
+		lcd.setCursor(0,2); lcd.print(F("T3:"));
+		lcd.setCursor(0,3); lcd.print(F("R0:"));
+		
 	}	
 	
-	if(menu.periodic(DELAY_MENU_REFRESH)||flag) 
+	if(menu.periodic(DELAY_MENU_REFRESH)) 
 	{
 		lcd.setCursor(3,0); printT(0); lcd.setCursor(13,0); printT(9);
 		lcd.setCursor(3,1); printT(1); lcd.setCursor(13,1); printT(2); 
 		lcd.setCursor(3,2); printT(3);
-		lcd.setCursor(3,3); printR(BIT_R1); lcd<<" "<<Pwm1<<"%"; 
+		lcd.setCursor(3,3); printR(BIT_R0); lcd<<" "<<Pwm0<<"%"; 
 	}
 	
 	if(Counter<0 || menu.elapsed(DELAY_MENU_BACK))
@@ -506,26 +510,26 @@ void menu_start2()
 
 void menu_start3()
 {
-	bool flag=false;
+	
 	if (menu.isFirstRun())
 	{
 		lcd.clear();
-		lcd.print(F("T5:       T6:"));
-		lcd.setCursor(0,1); lcd.print(F("T7:       T8:"));
-		lcd.setCursor(0,2); lcd.print(F("R2:   R3:   R4:"));
-		lcd.setCursor(0,3); lcd.print(F("T9:         R5:"));
-		flag=true;
+		lcd.print(F("T4:       T5:"));
+		lcd.setCursor(0,1); lcd.print(F("T6:       T7:"));
+		lcd.setCursor(0,2); lcd.print(F("R1:   R2:   R3:"));
+		lcd.setCursor(0,3); lcd.print(F("T8:         R4:"));
+		
 	}
 	
-	if(menu.periodic(DELAY_MENU_REFRESH)||flag) 
+	if(menu.periodic(DELAY_MENU_REFRESH)) 
 	{
 		lcd.setCursor(3,0); printT(4); lcd.setCursor(13,0); printT(5);
 		lcd.setCursor(3,1); printT(6); lcd.setCursor(13,1); printT(7);
-		lcd.setCursor(3,2); printR(BIT_R2); 
-		lcd.setCursor(9,2); printR(BIT_R3); 
-		lcd.setCursor(15,2); printR(BIT_R4);
+		lcd.setCursor(3,2); printR(BIT_R1); 
+		lcd.setCursor(9,2); printR(BIT_R2); 
+		lcd.setCursor(15,2); printR(BIT_R3);
 		lcd.setCursor(3,3); printT(8); 
-		lcd.setCursor(15,3); printR(BIT_R5);
+		lcd.setCursor(15,3); printR(BIT_R4);
 	}
 	
 	if(encoderCount()<0)
@@ -629,39 +633,39 @@ void outset(byte bit, char count)
 void Rprintset()
 {
 	lcd.setCursor(3,1); 
-	if(RF&BIT_R1) {lcd<<F("    ");lcd.setCursor(3,1); lcd<<(R&BIT_R1);}
+	if(RF&BIT_R0) {lcd<<F("    ");lcd.setCursor(3,1); lcd<<(R&BIT_R0);}
 	else lcd << F("AUTO");
-	lcd.setCursor(8,1); lcd<<Pwm1<<F("%  ");
+	lcd.setCursor(8,1); lcd<<Pwm0<<F("%  ");
 	lcd.setCursor(3,2); 
-	if(RF&BIT_R2) {lcd<<F("    ");lcd.setCursor(3,2); lcd<<((R&BIT_R2)&&1);}
+	if(RF&BIT_R1) {lcd<<F("    ");lcd.setCursor(3,2); lcd<<((R&BIT_R1)&&1);}
 	else lcd << F("AUTO");
 	lcd.setCursor(3,3); 
-	if(RF&BIT_R3) {lcd<<F("    ");lcd.setCursor(3,3); lcd<<((R&BIT_R3)&&1);}
+	if(RF&BIT_R2) {lcd<<F("    ");lcd.setCursor(3,3); lcd<<((R&BIT_R2)&&1);}
 	else lcd << F("AUTO");
 	lcd.setCursor(15,2); 
-	if(RF&BIT_R4) {lcd<<F("    ");lcd.setCursor(15,2); lcd<<((R&BIT_R4)&&1);}
+	if(RF&BIT_R3) {lcd<<F("    ");lcd.setCursor(15,2); lcd<<((R&BIT_R3)&&1);}
 	else lcd << F("AUTO");
 	lcd.setCursor(15,3); 
-	if(RF&BIT_R5) {lcd<<F("    ");lcd.setCursor(15,3); lcd<<((R&BIT_R5)&&1);}
+	if(RF&BIT_R4) {lcd<<F("    ");lcd.setCursor(15,3); lcd<<((R&BIT_R4)&&1);}
 	else lcd << F("AUTO");
 	
 	switch (Pos)
 	{
-		case 0 : { lcd.setCursor(3,1); outset(BIT_R1, encoderCount()); break; }
+		case 0 : { lcd.setCursor(3,1); outset(BIT_R0, encoderCount()); break; }
 		case 1 : { 
 			lcd.setCursor(8,1); 
-			if(RF&BIT_R1) 
+			if(RF&BIT_R0) 
 			{
-				Pwm1+=(encoderCount()*5);
-				if(Pwm1<0) Pwm1=0;
-				if(Pwm1>100) Pwm1=100;
+				Pwm0+=(encoderCount()*5);
+				if(Pwm0<0) Pwm0=0;
+				if(Pwm0>100) Pwm0=100;
 			}
 			else encoderCount();
 			break; }
-		case 2 : { lcd.setCursor(3,2); outset(BIT_R2, encoderCount()); break; }
-		case 3 : { lcd.setCursor(3,3); outset(BIT_R3, encoderCount()); break; }
-		case 4 : { lcd.setCursor(15,2); outset(BIT_R4, encoderCount()); break; }
-		case 5 : { lcd.setCursor(15,3); outset(BIT_R5, encoderCount()); break; }
+		case 2 : { lcd.setCursor(3,2); outset(BIT_R1, encoderCount()); break; }
+		case 3 : { lcd.setCursor(3,3); outset(BIT_R2, encoderCount()); break; }
+		case 4 : { lcd.setCursor(15,2); outset(BIT_R3, encoderCount()); break; }
+		case 5 : { lcd.setCursor(15,3); outset(BIT_R4, encoderCount()); break; }
 	}
 }
 //TODO: changerle comportement pour etre consistant avec le menu et le forcage
@@ -684,7 +688,7 @@ void menu_forceR()
 	if(btn.state(BTN_LONGCLICK))
 	{
 		lcd.noBlink();
-		menu.next(menu_param2);
+		menu.next(menu_start);
 	}
 	
 	if(btn.state(BTN_CLICK))
@@ -711,7 +715,7 @@ void Tprintset()
 		if(Page*6+i>=SENSOR_NBR) break;
 		if(i<3) lcd.setCursor(0,i+1); 
 		else lcd.setCursor(10,i-2);
-		lcd<<F("T")<<(Page*6+i+1)<<F(":"); 
+		lcd<<F("T")<<(Page*6+i)<<F(":"); 
 		if(!TForce[Page*6+i]) lcd<<F("AUTO "); 
 		else printT(Page*6+i);
 	}
@@ -760,7 +764,7 @@ void menu_forceT()
 	switch (btn.state())
 	{
 		case BTN_CLICK : { menu.next(menu_forceT_edit); break; }
-		case BTN_LONGCLICK : { lcd.noBlink(); menu.next(menu_param2); break; }
+		case BTN_LONGCLICK : { lcd.noBlink(); menu.next(menu_start); break; }
 		//case BTN_DOUBLECLICK : break;
 	}
 
@@ -882,6 +886,7 @@ void menu_setsensors()
 	
 	if(btn.state(BTN_LONGCLICK))
 	{
+		lcd.noBlink();
 		menu.next(menu_param);
 		gettemp.next(gettemp_start);
 	}
@@ -960,10 +965,10 @@ void menu_setS()
 	{
 		lcd.clear();
 		lcd<<F("Parametres solaire");
-		lcd.setCursor(1,1); lcd<< F("S1 base");
-		lcd.setCursor(1,2); lcd<< F("S2 pompe");
-		lcd.setCursor(1,3); lcd<< F("S3 avance");
-		lcd.setCursor(11,1); lcd<<F("S4 protec");
+		lcd.setCursor(1,1); lcd<< F("S0 base");
+		lcd.setCursor(1,2); lcd<< F("S1 pompe");
+		lcd.setCursor(1,3); lcd<< F("S2 avance");
+		lcd.setCursor(11,1); lcd<<F("S3 protec");
 		Pos=0;Page=0;
 		arrow(4);		
 	}
@@ -987,8 +992,8 @@ void menu_setC()
 	{
 		lcd.clear();
 		lcd<<F("Parametres chauffage");
-		lcd.setCursor(1,1); lcd<< F("C1 base");
-		lcd.setCursor(1,2); lcd<< F("C2 vanne");
+		lcd.setCursor(1,1); lcd<< F("C0 base");
+		lcd.setCursor(1,2); lcd<< F("C1 vanne");
 		//lcd.setCursor(1,3); lcd<< F("S3 avance");
 		//lcd.setCursor(11,1); lcd<<F("S4 protec");
 		Pos=0;Page=0;
@@ -1035,7 +1040,7 @@ void menu_setSxx()
 		{
 			if(i<3) lcd.setCursor(1,i+1); 
 			else lcd.setCursor(11,i-2);
-			lcd<<F("S")<<(int)Page+1<<F(".")<<(i+1)<<F(":"); 
+			lcd<<F("S")<<(int)Page<<F(".")<<i<<F(":"); 
 			lcd<<(int)S[Page][i];
 		}
 		arrow(Sn[Page]);
@@ -1067,7 +1072,7 @@ void menu_setCxx()
 		{
 			if(i<3) lcd.setCursor(1,i+1); 
 			else lcd.setCursor(11,i-2);
-			lcd<<F("C")<<(int)Page+1<<F(".")<<(i+1)<<F(":"); 
+			lcd<<F("C")<<(int)Page<<F(".")<<i<<F(":"); 
 			lcd<<(int)C[Page][i];
 		}
 		arrow(Cn[Page]);
@@ -1176,5 +1181,112 @@ void menu_editCxx()
 }
 
 
+///////////////////////////solar state machine//////////////////////////////////
 
+void solar_off()
+{
+}
 
+void solar_wait()
+{
+	R&=BIT_R0;
+	Pwm0=0;
+	
+	if( S[3][0] && T[0]>S[3][1] && T[1]<S[3][3] )
+		solar.next(solar_protection);
+	
+	if( T[0]>(T[1]+S[0][1]) && T[1]<(S[0][0]-S[0][3]) )
+		solar.next(solar_run);
+	
+	if( S[2][0] && solar.elapsed(S[2][3]*10000) && T[0]>S[2][1] )
+		solar.next(solar_try);
+}
+
+void solar_protection()
+{
+	R&=BIT_R0;
+	Pwm0=S[1][0];
+	
+	if( T[0]<(S[3][1]-S[3][2]) )
+		solar.next(solar_wait);
+	
+	if( T[1]>S[3][3] )
+		solar.next(solar_protection_err);
+}
+
+void solar_protection_err()
+{
+	if(solar.isFirstRun())
+	{
+		//message
+	}
+	
+	if( T[0]<(S[3][1]-S[3][2]) || T[1]<S[3][3] )
+		solar.next(solar_wait);
+}
+
+void solar_run()
+{
+	if(solar.isFirstRun())
+		solarRun.next(solarRun_start);
+
+	solarRun.run();
+	
+	if( T[0]<(T[1]+S[0][2]) || T[1]>S[0][0] )
+		solar.next(solar_wait);
+}
+
+void solar_try()
+{
+	R&=BIT_R0;
+	Pwm0=S[1][1];
+	
+	if( solar.elapsed(S[2][2]*1000) )
+		solar.next(solar_wait);
+}
+
+////////////////////////solarRun state machine//////////////////////////////////
+void solarRun_start()
+{
+	R&=BIT_R0;
+	Pwm0=S[1][1];
+	
+	solarRun.next(solarRun_wait);
+}
+
+void solarRun_wait()
+{
+	R&=BIT_R0;
+	//Pwm0=S[1][1];
+	
+	if( solarRun.elapsed(S[1][3]*10000))
+	{
+		if( (T[0]-T[1])<S[1][4] )
+			solarRun.next(solarRun_dec);
+		
+		if( (T[0]-T[1])>S[1][4] )
+			solarRun.next(solarRun_inc);
+	}		
+}
+
+void solarRun_dec()
+{
+	R&=BIT_R0;
+	Pwm0-=S[1][2];
+	
+	if( Pwm0<S[1][1] ) 
+		Pwm0=S[1][1];
+	
+	solarRun.next(solarRun_wait);
+}
+
+void solarRun_inc()
+{
+	R&=BIT_R0;
+	Pwm0+=S[1][2];
+	
+	if( Pwm0>S[1][0] ) 
+		Pwm0=S[1][0];
+	
+	solarRun.next(solarRun_wait);
+}
