@@ -107,7 +107,7 @@
                     <terminal x="-8" number="_" nameHidden="0" id="19" y="0" name="_" orientation="3"/>
                 </terminals>
                 <inputs>
-                    <input x="15" y="2" text="S3.0&amp;&amp;T0>S3.1&amp;&amp;T1&lt;S3.3"/>
+                    <input x="15" y="2" text="S3.0&amp;&amp;T0>S3.1"/>
                 </inputs>
                 <elementInformations>
                     <elementInformation name="label" show="1"></elementInformation>

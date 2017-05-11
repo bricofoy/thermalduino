@@ -1,5 +1,5 @@
 /*
-	Thermoduino
+	Thermalduino
 	
 	Arduino based thermal regulator for renewable energy systems
 
@@ -45,8 +45,7 @@ bool TForce[SENSOR_NBR];
 char Counter=0;
 
 
-//SD card CS pin on the robotdyn shield is pin 9
-#define PIN_SD_CS	53
+#define PIN_SD_CS	SS
 #define LOGFILENAME	"datalog.txt"
 // File system object.
 SdFat sd;
@@ -99,8 +98,8 @@ const char *St1[]={
 	"PWM max %",
 	"PWM min %",
 	"Increment %",
-	"Periode cycle x10s",
-	"Difference voulue"}; 
+	"Periode cycle (s)",
+	"Ecart T0-T1 voulu"}; 
 const char *St2[]={	
 	"Demarrage periodique",
 	"T mini capteur",
@@ -109,7 +108,7 @@ const char *St2[]={
 const char *St3[]={	
 	"Protection surchauff",
 	"T max capteur",
-	"Differential arret",
+	"Differentiel arret",
 	"T max bas ballon"}; 	
 const char **St[]={St0,St1,St2,St3};
 const char *Ct0[]={
@@ -146,7 +145,7 @@ DS1307_t DateTime;
 
 void setup(void)
 {
-  //Serial.begin(9600); 
+  Serial.begin(9600); 
   
   lcd.begin(4,20);
   lcd.backlight();
@@ -371,7 +370,7 @@ void datalog_wait()
 void datalog_wait_card()
 {
 	if(datalog.elapsed(DELAY_SDINIT))
-		datalog.next(datalog_write);
+		datalog.next(datalog_start);
 }
 void datalog_start()
 {
@@ -390,9 +389,9 @@ void datalog_start()
 	}
 
 	logfile<<_endl<<F("date;");
-	for(byte i=0;i<SENSOR_NBR;i++) logfile << F("F;T")<<i+1<<F(";");
+	for(byte i=0;i<SENSOR_NBR;i++) logfile << F("F;T")<<i<<F(";");
 	logfile<<F("Pwm;");
-	for(byte i=0;i<RELAYS_NBR;i++) logfile << F("F;R")<<i+1<<F(";");
+	for(byte i=0;i<RELAYS_NBR;i++) logfile << F("F;R")<<i<<F(";");
 	logfile<<_endl;
 	logfile.flush();
 	logfile.close();
@@ -452,7 +451,7 @@ void menu_start()
 		lcd.setCursor(13,0); printT(3);
 
 		lcd.setCursor(7,1); printT(0);
-		lcd.setCursor(15,1); if(RF&BIT_R0) lcd<<F("F"); lcd<<Pwm0<<F("%");
+		lcd.setCursor(15,1); if(RF&BIT_R0) lcd<<F("F"); lcd<<Pwm0<<F("% ");
 		
 		lcd.setCursor(3,2); printT(7);
 		lcd.setCursor(13,2); printT(6);
@@ -1184,15 +1183,20 @@ void menu_editCxx()
 ///////////////////////////solar state machine//////////////////////////////////
 
 void solar_off()
-{
+{	
+	if(solar.isFirstRun())
+		Serial<<"solar_off"<<_endl;
 }
 
 void solar_wait()
 {
-	R&=BIT_R0;
+	R+=BIT_R0;
 	Pwm0=0;
 	
-	if( S[3][0] && T[0]>S[3][1] && T[1]<S[3][3] )
+	if(solar.isFirstRun())
+		Serial<<"solar_wait"<<T[0]<<" "<<T[1]<<_endl;
+	
+	if( S[3][0] && T[0]>S[3][1] )
 		solar.next(solar_protection);
 	
 	if( T[0]>(T[1]+S[0][1]) && T[1]<(S[0][0]-S[0][3]) )
@@ -1205,7 +1209,10 @@ void solar_wait()
 void solar_protection()
 {
 	R&=BIT_R0;
-	Pwm0=S[1][0];
+	Pwm0=S[1][0];	
+	
+	if(solar.isFirstRun())
+		Serial<<"solar_protection"<<_endl;
 	
 	if( T[0]<(S[3][1]-S[3][2]) )
 		solar.next(solar_wait);
@@ -1218,8 +1225,11 @@ void solar_protection_err()
 {
 	if(solar.isFirstRun())
 	{
-		//message
+		Serial<<"solar_protection error"<<_endl;//message tank overheat
 	}
+	
+	R&=BIT_R0;
+	Pwm0=0;
 	
 	if( T[0]<(S[3][1]-S[3][2]) || T[1]<S[3][3] )
 		solar.next(solar_wait);
@@ -1228,7 +1238,10 @@ void solar_protection_err()
 void solar_run()
 {
 	if(solar.isFirstRun())
+	{
 		solarRun.next(solarRun_start);
+		Serial<<"solar_run"<<_endl;
+	}
 
 	solarRun.run();
 	
@@ -1239,7 +1252,10 @@ void solar_run()
 void solar_try()
 {
 	R&=BIT_R0;
-	Pwm0=S[1][1];
+	Pwm0=S[1][1];	
+	
+	if(solar.isFirstRun())
+		Serial<<"solar_try "<<_endl;
 	
 	if( solar.elapsed(S[2][2]*1000) )
 		solar.next(solar_wait);
@@ -1250,6 +1266,10 @@ void solarRun_start()
 {
 	R&=BIT_R0;
 	Pwm0=S[1][1];
+		
+	if(solarRun.isFirstRun())
+		Serial<<"solarRun_start "<<_endl;
+	
 	
 	solarRun.next(solarRun_wait);
 }
@@ -1257,9 +1277,12 @@ void solarRun_start()
 void solarRun_wait()
 {
 	R&=BIT_R0;
-	//Pwm0=S[1][1];
+	//Pwm0=S[1][1];	
 	
-	if( solarRun.elapsed(S[1][3]*10000))
+	if(solarRun.isFirstRun())
+		Serial<<"solarRun_wait "<<_endl;
+	
+	if( solarRun.elapsed(S[1][3]*1000))
 	{
 		if( (T[0]-T[1])<S[1][4] )
 			solarRun.next(solarRun_dec);
