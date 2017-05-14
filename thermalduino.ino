@@ -46,12 +46,14 @@ char Counter=0;
 
 
 #define PIN_SD_CS	SS
+#define PIN_SD_ALIM 49
 #define LOGFILENAME	"datalog.txt"
 // File system object.
 SdFat sd;
 // Log file.
 SdFile logfile;
 bool SdOK=false,FileOK=false;
+
 
 //outputs
 #define PIN_PWM0	10	//solar pump speed signal
@@ -158,6 +160,8 @@ void setup(void)
   pinMode(PIN_B,INPUT_PULLUP);  
   pinMode(PIN_BTN,INPUT_PULLUP);
   
+  pinMode(PIN_SD_ALIM,OUTPUT);
+  
   pinMode(PIN_R0,OUTPUT);
   pinMode(PIN_R1,OUTPUT);
   pinMode(PIN_R2,OUTPUT);
@@ -183,10 +187,12 @@ void loop(void)
 	btn.update(!digitalRead(PIN_BTN)); // ! because btn switch to gnd
 	encoderRead();
 	gettemp.run();
-	menu.run();
+	
 	solar.run();
 	heat.run();
 	boiler.run();
+	menu.run(); //menu must be called after the automation SMs because if not 
+				//R values are not set and it always display 0
 	datalog.run();
 	//R |= RF; //
 	outputsWrite();
@@ -369,11 +375,16 @@ void datalog_wait()
 }
 void datalog_wait_card()
 {
+	digitalWrite(PIN_SD_ALIM,LOW);
+	
 	if(datalog.elapsed(DELAY_SDINIT))
 		datalog.next(datalog_start);
 }
 void datalog_start()
 {
+	digitalWrite(PIN_SD_ALIM,HIGH);
+	delay(500);
+	
 	SdOK=sd.begin(PIN_SD_CS, SPI_HALF_SPEED);
 	if(!SdOK)
 	{
@@ -393,8 +404,9 @@ void datalog_start()
 	logfile<<F("Pwm;");
 	for(byte i=0;i<RELAYS_NBR;i++) logfile << F("F;R")<<i<<F(";");
 	logfile<<_endl;
-	logfile.flush();
+	//logfile.flush();
 	logfile.close();
+
 	datalog.next(datalog_write);
 				
 }
@@ -422,8 +434,10 @@ void datalog_write()
 		logfile << F(";")<< ((R&(2^i))&&1) << F(";");
 	}
 	logfile<<_endl;
-	logfile.flush();
-	logfile.close();
+	//logfile.flush();
+	logfile.close();	
+
+
 	datalog.next(datalog_wait);
 
 }
@@ -1185,12 +1199,17 @@ void menu_editCxx()
 void solar_off()
 {	
 	if(solar.isFirstRun())
+	{
+		Pwm0=0;
 		Serial<<"solar_off"<<_endl;
+	}
+	
+
 }
 
 void solar_wait()
 {
-	R+=BIT_R0;
+	R|=BIT_R0;
 	Pwm0=0;
 	
 	if(solar.isFirstRun())
@@ -1202,13 +1221,14 @@ void solar_wait()
 	if( T[0]>(T[1]+S[0][1]) && T[1]<(S[0][0]-S[0][3]) )
 		solar.next(solar_run);
 	
-	if( S[2][0] && solar.elapsed(S[2][3]*10000) && T[0]>S[2][1] )
+	if( S[2][0] && T[0]>S[2][1] && solar.elapsed(S[2][3]*10000) )
 		solar.next(solar_try);
+	 
 }
 
 void solar_protection()
 {
-	R&=BIT_R0;
+	R|=BIT_R0;
 	Pwm0=S[1][0];	
 	
 	if(solar.isFirstRun())
@@ -1228,7 +1248,7 @@ void solar_protection_err()
 		Serial<<"solar_protection error"<<_endl;//message tank overheat
 	}
 	
-	R&=BIT_R0;
+	R|=BIT_R0;
 	Pwm0=0;
 	
 	if( T[0]<(S[3][1]-S[3][2]) || T[1]<S[3][3] )
@@ -1251,7 +1271,7 @@ void solar_run()
 
 void solar_try()
 {
-	R&=BIT_R0;
+	R|=BIT_R0;
 	Pwm0=S[1][1];	
 	
 	if(solar.isFirstRun())
@@ -1264,7 +1284,7 @@ void solar_try()
 ////////////////////////solarRun state machine//////////////////////////////////
 void solarRun_start()
 {
-	R&=BIT_R0;
+	R|=BIT_R0;
 	Pwm0=S[1][1];
 		
 	if(solarRun.isFirstRun())
@@ -1276,7 +1296,7 @@ void solarRun_start()
 
 void solarRun_wait()
 {
-	R&=BIT_R0;
+	R|=BIT_R0;
 	//Pwm0=S[1][1];	
 	
 	if(solarRun.isFirstRun())
@@ -1294,7 +1314,7 @@ void solarRun_wait()
 
 void solarRun_dec()
 {
-	R&=BIT_R0;
+	R|=BIT_R0;
 	Pwm0-=S[1][2];
 	
 	if( Pwm0<S[1][1] ) 
@@ -1305,7 +1325,7 @@ void solarRun_dec()
 
 void solarRun_inc()
 {
-	R&=BIT_R0;
+	R|=BIT_R0;
 	Pwm0+=S[1][2];
 	
 	if( Pwm0>S[1][0] ) 
