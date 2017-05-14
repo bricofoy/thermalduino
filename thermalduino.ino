@@ -382,11 +382,11 @@ void datalog_wait_card()
 }
 void datalog_start()
 {
-	digitalWrite(PIN_SD_ALIM,HIGH);
-	delay(500);
+	digitalWrite(PIN_SD_ALIM,HIGH);	//turn on card power
+	if(!datalog.elapsed(500)) return; //leave some time for the card to power up
 	
 	SdOK=sd.begin(PIN_SD_CS, SPI_HALF_SPEED);
-	if(!SdOK)
+	if(!SdOK) //something gone wrong so retry later
 	{
 		datalog.next(datalog_wait_card);
 		return;
