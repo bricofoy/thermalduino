@@ -373,6 +373,7 @@ void datalog_wait()
 	if(datalog.elapsed(DELAY_LOG_PERIOD))
 		datalog.next(datalog_write);
 }
+
 void datalog_wait_card()
 {
 	digitalWrite(PIN_SD_ALIM,LOW);
@@ -380,6 +381,7 @@ void datalog_wait_card()
 	if(datalog.elapsed(DELAY_SDINIT))
 		datalog.next(datalog_start);
 }
+
 void datalog_start()
 {
 	digitalWrite(PIN_SD_ALIM,HIGH);	//turn on card power
@@ -404,11 +406,9 @@ void datalog_start()
 	logfile<<F("Pwm;");
 	for(byte i=0;i<RELAYS_NBR;i++) logfile << F("F;R")<<i<<F(";");
 	logfile<<_endl;
-	//logfile.flush();
 	logfile.close();
 
-	datalog.next(datalog_write);
-				
+	datalog.next(datalog_write);				
 }
 
 void datalog_write()
@@ -434,12 +434,9 @@ void datalog_write()
 		logfile << F(";")<< ((R&(2^i))&&1) << F(";");
 	}
 	logfile<<_endl;
-	//logfile.flush();
-	logfile.close();	
-
-
+	logfile.close();
+	
 	datalog.next(datalog_wait);
-
 }
 	
 
