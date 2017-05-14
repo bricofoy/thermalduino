@@ -1209,11 +1209,11 @@ void solar_off()
 
 void solar_wait()
 {
-	R|=BIT_R0;
+	setOutput(BIT_R0, 1);
 	Pwm0=0;
 	
-	if(solar.isFirstRun())
-		Serial<<"solar_wait"<<T[0]<<" "<<T[1]<<_endl;
+/* 	if(solar.isFirstRun())
+		Serial<<"solar_wait"<<T[0]<<" "<<T[1]<<_endl; */
 	
 	if( S[3][0] && T[0]>S[3][1] )
 		solar.next(solar_protection);
@@ -1228,11 +1228,11 @@ void solar_wait()
 
 void solar_protection()
 {
-	R|=BIT_R0;
+	setOutput(BIT_R0, 1);
 	Pwm0=S[1][0];	
 	
-	if(solar.isFirstRun())
-		Serial<<"solar_protection"<<_endl;
+/* 	if(solar.isFirstRun())
+		Serial<<"solar_protection"<<_endl; */
 	
 	if( T[0]<(S[3][1]-S[3][2]) )
 		solar.next(solar_wait);
@@ -1243,12 +1243,12 @@ void solar_protection()
 
 void solar_protection_err()
 {
-	if(solar.isFirstRun())
+/* 	if(solar.isFirstRun())
 	{
 		Serial<<"solar_protection error"<<_endl;//message tank overheat
-	}
+	} */
 	
-	R|=BIT_R0;
+	setOutput(BIT_R0, 1);
 	Pwm0=0;
 	
 	if( T[0]<(S[3][1]-S[3][2]) || T[1]<S[3][3] )
@@ -1260,7 +1260,7 @@ void solar_run()
 	if(solar.isFirstRun())
 	{
 		solarRun.next(solarRun_start);
-		Serial<<"solar_run"<<_endl;
+	//	Serial<<"solar_run"<<_endl;
 	}
 
 	solarRun.run();
@@ -1271,11 +1271,11 @@ void solar_run()
 
 void solar_try()
 {
-	R|=BIT_R0;
+	setOutput(BIT_R0, 1);
 	Pwm0=S[1][1];	
 	
-	if(solar.isFirstRun())
-		Serial<<"solar_try "<<_endl;
+/* 	if(solar.isFirstRun())
+		Serial<<"solar_try "<<_endl; */
 	
 	if( solar.elapsed(S[2][2]*1000) )
 		solar.next(solar_wait);
@@ -1284,11 +1284,11 @@ void solar_try()
 ////////////////////////solarRun state machine//////////////////////////////////
 void solarRun_start()
 {
-	R|=BIT_R0;
+	setOutput(BIT_R0, 1);
 	Pwm0=S[1][1];
 		
-	if(solarRun.isFirstRun())
-		Serial<<"solarRun_start "<<_endl;
+/* 	if(solarRun.isFirstRun())
+		Serial<<"solarRun_start "<<_endl; */
 	
 	
 	solarRun.next(solarRun_wait);
@@ -1296,11 +1296,10 @@ void solarRun_start()
 
 void solarRun_wait()
 {
-	R|=BIT_R0;
-	//Pwm0=S[1][1];	
+	setOutput(BIT_R0, 1);
 	
-	if(solarRun.isFirstRun())
-		Serial<<"solarRun_wait "<<_endl;
+/* 	if(solarRun.isFirstRun())
+		Serial<<"solarRun_wait "<<_endl; */
 	
 	if( solarRun.elapsed(S[1][3]*1000))
 	{
@@ -1314,7 +1313,7 @@ void solarRun_wait()
 
 void solarRun_dec()
 {
-	R|=BIT_R0;
+	setOutput(BIT_R0, 1);
 	Pwm0-=S[1][2];
 	
 	if( Pwm0<S[1][1] ) 
@@ -1325,7 +1324,7 @@ void solarRun_dec()
 
 void solarRun_inc()
 {
-	R|=BIT_R0;
+	setOutput(BIT_R0, 1);
 	Pwm0+=S[1][2];
 	
 	if( Pwm0>S[1][0] ) 
