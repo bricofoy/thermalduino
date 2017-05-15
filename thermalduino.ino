@@ -885,8 +885,8 @@ void menu_setsensors()
 	if (Counter!=0) 
 	{
 		Pos+=encoderCount();
-		if(Pos<1) Pos=1;
-		if(Pos>SENSOR_NBR) Pos=SENSOR_NBR;
+		if(Pos<0) Pos=0;
+		if(Pos>SENSOR_NBR-1) Pos=SENSOR_NBR-1;
 		lcd.setCursor(6,1); lcd<<(byte)Pos;
 		if(Pos<10) lcd<<F(" ");
 	}
@@ -1286,8 +1286,6 @@ void solarRun_start()
 		
 /* 	if(solarRun.isFirstRun())
 		Serial<<"solarRun_start "<<_endl; */
-	
-	
 	solarRun.next(solarRun_wait);
 }
 
