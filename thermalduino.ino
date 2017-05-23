@@ -494,7 +494,7 @@ void menu_start2()
 	if (menu.isFirstRun())
 	{
 		lcd.clear();
-		lcd.print(F("T0:      T9:"));
+		lcd.print(F("T0:       T9:"));
 		lcd.setCursor(0,1); lcd.print(F("T1:       T2:"));
 		lcd.setCursor(0,2); lcd.print(F("T3:"));
 		lcd.setCursor(0,3); lcd.print(F("R0:"));
@@ -688,9 +688,9 @@ void menu_forceR()
 		Pos=0;
 		encoderCount();
 		lcd<<F("Forcage relais");
-		lcd.setCursor(0,1); lcd<<F("R1:");
-		lcd.setCursor(0,2); lcd<<F("R2:         R4:");
-		lcd.setCursor(0,3); lcd<<F("R3:         R5:");
+		lcd.setCursor(0,1); lcd<<F("R0:");
+		lcd.setCursor(0,2); lcd<<F("R1:         R3:");
+		lcd.setCursor(0,3); lcd<<F("R2:         R4:");
 		lcd.blink();
 		Rprintset();
 	}
