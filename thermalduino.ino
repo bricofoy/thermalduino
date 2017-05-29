@@ -18,6 +18,8 @@
 #include <SdFat.h>
 #include <Streaming.h>
 
+#include <avr/wdt.h> //watchdog timer
+
 //sensor addresses EEPROM storage address
 #define EEPROM_SENSOR_ADR 	0
 #define SENSOR_NBR 			10
@@ -57,11 +59,15 @@ bool SdOK=false,FileOK=false;
 
 //outputs
 #define PIN_PWM0	10	//solar pump speed signal
-#define PIN_R0		5	//solar pump
-#define PIN_R1		4	//heating pump
-#define PIN_R2		3	//heating water temp servo +/-
-#define PIN_R3		2	//heating water temp servo on
-#define PIN_R4		A0	//boiler pump
+#define PIN_R0		36	//solar pump
+#define PIN_R1		34	//heating pump
+#define PIN_R2		32	//heating water temp servo +/-
+#define PIN_R3		30	//heating water temp servo on
+#define PIN_R4		28	//boiler pump
+#define PIN_R5		26
+#define PIN_R6		24
+#define PIN_R7		22
+
 
 #define RELAYS_NBR 5
 byte R=0;
@@ -149,6 +155,9 @@ void setup(void)
 {
   Serial.begin(9600); 
   
+  wdt_enable(WDTO_4S); //4 seconds watchdog
+  
+  Wire.setClock(10000);
   lcd.begin(4,20);
   lcd.backlight();
   //lcd.clear();
@@ -182,6 +191,7 @@ void setup(void)
 
 void loop(void) 
 {
+	wdt_reset(); //clear watchdog timer
 	R &= RF; //erase all output bits except forced ones
 	RTC.get(&DateTime,true);
 	btn.update(!digitalRead(PIN_BTN)); // ! because btn switch to gnd
@@ -478,7 +488,7 @@ void menu_start()
 			lcd<<F(" ");
 		}
 		
-		lcd.setCursor(15,3); lcd<<freeRam();
+		//lcd.setCursor(15,3); lcd<<freeRam();
 	}
  
 	if(encoderCount()>0)
