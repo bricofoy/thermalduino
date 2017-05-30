@@ -227,13 +227,30 @@ void setOutput(byte pin, bool state)
 
 void outputsWrite()
 {
+	byte pwm=0;
+	
 	// ! because relays are active low
 	digitalWrite(PIN_R0,!(R&BIT_R0));
 	digitalWrite(PIN_R1,!(R&BIT_R1));
 	digitalWrite(PIN_R2,!(R&BIT_R2));
 	digitalWrite(PIN_R3,!(R&BIT_R3));
 	digitalWrite(PIN_R4,!(R&BIT_R4));
-	analogWrite(PIN_PWM0,Pwm0);
+	
+	if(RF&BIT_R0) 					//if output is forced just remap the % value
+		pwm=map(Pwm0,0,100,0,255);  //to the 0->255 needed for analogWrite().
+	else //if output is not forced, we need to adapt to what the pump want
+		if(R&BIT_R0)
+			if(Pwm0==0) 
+				pwm=247; //=97%. This is the value needed to stop the OEG pump
+			else 
+				pwm=map(map(Pwm0,1,100,84,10),0,100,0,255);
+				//because for OEG pumps, min->max speed is corresponding to 
+				//84%(min)->10%(max) pwm duty cycle. This is the first map().
+				//And then we need this % value to get re-maped to the 0->255
+				//needed for analogWrite(). This is the second map().
+		else pwm=0; //if relay is of, turn off PWM output
+	//then eventually write the PWM value to the pin
+	analogWrite(PIN_PWM0,pwm);
 }
 
 void loadSensorsAddresses()
@@ -605,7 +622,7 @@ void menu_param2()
 		lcd<<(char)126<<F("Forcage relais");
 		lcd.setCursor(1,1); lcd<<F("Forcage temperature");
 		lcd.setCursor(1,2); lcd<<F("xxx");
-		lcd.setCursor(1,3); lcd<<F("xxxx");
+		lcd.setCursor(1,3); lcd<<F("testPWM");
 		Pos=0;
 	}
 
@@ -623,8 +640,8 @@ void menu_param2()
 		{
 			case 0 : { menu.next(menu_forceR); Pos=0; break; }
 			case 1 : { menu.next(menu_forceT); Pos=0; break; }
-			case 2 : { break; }
-			case 3 : { break; }
+			case 2 : { Pos=0; break; }
+			case 3 : { menu.next(menu_testPWM); Pos=0; break; }
 		}
 				
 	if(btn.state(BTN_LONGCLICK) || menu.elapsed(DELAY_MENU_EXIT_PARAM))
@@ -1200,6 +1217,59 @@ void menu_editCxx()
 		loadParams(); //discard the modified value : get the old one from eeprom
 	}
 }
+
+void testPWMrefresh()
+{
+	lcd.setCursor(4,1); lcd<<F("            "); 
+	lcd.setCursor(3,2); printR(BIT_R0);
+	lcd.setCursor(4,1); lcd<<map(Pwm0,0,100,0,255)<<"  "<<Pwm0<<"%";
+}
+
+void menu_testPWM()
+{
+	if (menu.isFirstRun())
+	{
+		solar.stop();
+		RF|=BIT_R0; R &= ~BIT_R0; //force R0 relay to LOW
+		
+		lcd.clear();
+		lcd.blink();
+		lcd << F("test PWM");
+		lcd.setCursor(0,1); lcd<< F("PWM   ");
+		lcd.setCursor(0,2);	lcd<< F("R0   ");
+		testPWMrefresh();
+	}
+	
+	//if(menu.periodic(300)) testPWMrefresh();
+	
+	
+	if(btn.state(BTN_LONGCLICK))
+	{
+		lcd.noBlink();
+		menu.next(menu_start);
+		solar.resume();
+		RF &= ~BIT_R0; //release the force bit
+	}
+	
+	if(btn.state(BTN_CLICK))
+	{
+		if(R&BIT_R0) R&=~BIT_R0;
+		else R|=BIT_R0;		//toggle R0 output
+		testPWMrefresh();
+	}
+
+	if(Counter)
+	{
+		Pwm0+=encoderCount();
+		if(Pwm0<0) Pwm0=100;
+		if(Pwm0>100) Pwm0=0;
+		testPWMrefresh();
+	}
+	
+}
+	
+	
+	
 
 
 ///////////////////////////solar state machine//////////////////////////////////
