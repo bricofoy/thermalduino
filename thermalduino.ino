@@ -39,6 +39,8 @@ bool TForce[SENSOR_NBR];
 #define DELAY_MENU_REFRESH		1500
 #define DELAY_LOG_PERIOD		5E3	
 #define DELAY_SDINIT			20E3
+#define DELAY_SOLAR_OFF			600E3	//10 minutes. delay before switching off
+										//solar pump power
 
 //encoder pins
 #define PIN_A	6
@@ -186,7 +188,7 @@ void setup(void)
   menu.next(menu_start); 
   gettemp.next(gettemp_start);
   datalog.next(datalog_start);
-  solar.next(solar_wait);
+  solar.next(solar_off);
 }
 
 void loop(void) 
@@ -344,7 +346,6 @@ void printR(byte bit)
 	
 
 ////////////////////////gettemp state machine///////////////////////////////////
-//
 void gettemp_start()
 {
 	sensors.begin(); // Start up the dallas library
@@ -1202,15 +1203,25 @@ void menu_editCxx()
 
 
 ///////////////////////////solar state machine//////////////////////////////////
-
 void solar_off()
 {	
-	if(solar.isFirstRun())
+/* 	if(solar.isFirstRun())
 	{
 		Pwm0=0;
 		Serial<<"solar_off"<<_endl;
-	}
+	} */
 	
+	setOutput(BIT_R0, 0);
+	Pwm0=0;
+	
+	if( S[3][0] && T[0]>S[3][1] )
+		solar.next(solar_protection);
+	
+	if( T[0]>(T[1]+S[0][1]) && T[1]<(S[0][0]-S[0][3]) )
+		solar.next(solar_run);
+	
+	if( S[2][0] && T[0]>S[2][1] && solar.elapsed(S[2][3]*10000) )
+		solar.next(solar_try);
 
 }
 
@@ -1230,6 +1241,8 @@ void solar_wait()
 	
 	if( S[2][0] && T[0]>S[2][1] && solar.elapsed(S[2][3]*10000) )
 		solar.next(solar_try);
+	
+	if( solar.elapsed(DELAY_SOLAR_OFF) ) solar.next(solar_off);
 	 
 }
 
