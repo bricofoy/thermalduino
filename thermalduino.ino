@@ -39,7 +39,7 @@ bool TForce[SENSOR_NBR];
 #define DELAY_MENU_REFRESH		1500
 #define DELAY_LOG_PERIOD		5E3	
 #define DELAY_SDINIT			20E3
-#define DELAY_SOLAR_OFF			600E3	//10 minutes. delay before switching off
+#define DELAY_SOLAR_OFF			1800E3	//30 minutes. delay before switching off
 										//solar pump power
 
 //encoder pins
@@ -79,7 +79,7 @@ byte RF=0;
 #define BIT_R2	4
 #define BIT_R3	8
 #define BIT_R4	16
-byte Pwm0=0;
+char Pwm0=0;
 
 
 #define NUM_S0	3
@@ -114,7 +114,7 @@ const char *St2[]={
 	"Demarrage periodique",
 	"T mini capteur",
 	"Duree impulsions (s)",
-	"Periode (x10s)"}; 
+	"Periode (mn)"}; 
 const char *St3[]={	
 	"Protection surchauff",
 	"T max capteur",
@@ -490,7 +490,7 @@ void menu_start()
 		lcd.setCursor(13,0); printT(3);
 
 		lcd.setCursor(7,1); printT(0);
-		lcd.setCursor(15,1); if(RF&BIT_R0) lcd<<F("F"); lcd<<Pwm0<<F("% ");
+		lcd.setCursor(15,1); if(RF&BIT_R0) lcd<<F("F"); lcd<<(byte)Pwm0<<F("% ");
 		
 		lcd.setCursor(3,2); printT(7);
 		lcd.setCursor(13,2); printT(6);
@@ -534,7 +534,7 @@ void menu_start2()
 		lcd.setCursor(3,0); printT(0); lcd.setCursor(13,0); printT(9);
 		lcd.setCursor(3,1); printT(1); lcd.setCursor(13,1); printT(2); 
 		lcd.setCursor(3,2); printT(3);
-		lcd.setCursor(3,3); printR(BIT_R0); lcd<<" "<<Pwm0<<"%"; 
+		lcd.setCursor(3,3); printR(BIT_R0); lcd<<" "<<(byte)Pwm0<<"%"; 
 	}
 	
 	if(Counter<0 || menu.elapsed(DELAY_MENU_BACK))
@@ -673,7 +673,7 @@ void Rprintset()
 	lcd.setCursor(3,1); 
 	if(RF&BIT_R0) {lcd<<F("    ");lcd.setCursor(3,1); lcd<<(R&BIT_R0);}
 	else lcd << F("AUTO");
-	lcd.setCursor(8,1); lcd<<Pwm0<<F("%  ");
+	lcd.setCursor(8,1); lcd<<(byte)Pwm0<<F("%  ");
 	lcd.setCursor(3,2); 
 	if(RF&BIT_R1) {lcd<<F("    ");lcd.setCursor(3,2); lcd<<((R&BIT_R1)&&1);}
 	else lcd << F("AUTO");
@@ -938,20 +938,20 @@ void menu_setsensors2()
 		lcd<<F("Sonde T")<<(byte)Pos;
 		lcd.setCursor(0,1);
 		sensors.getDeviceCount();
-		if (!sensors.getAddress(sensorAddress[Pos-1], 0)) lcd<<F("erreur sonde");
+		if (!sensors.getAddress(sensorAddress[Pos], 0)) lcd<<F("erreur sonde");
 		else {
-			sensors.setResolution(sensorAddress[Pos-1], TEMPERATURE_RESOLUTION);
+			sensors.setResolution(sensorAddress[Pos], TEMPERATURE_RESOLUTION);
 			sensors.requestTemperatures();
 					
 			//print sensor address
 			for (uint8_t i = 0; i < 8; i++){
 				// zero pad the address if necessary
-				if (sensorAddress[Pos-1][i] < 16) lcd<<F("0");
-				lcd<<_HEX(sensorAddress[Pos-1][i]);
+				if (sensorAddress[Pos][i] < 16) lcd<<F("0");
+				lcd<<_HEX(sensorAddress[Pos][i]);
 			}
-			delay(750/(1<<(12-TEMPERATURE_RESOLUTION)));
+			delay(800);
 			lcd.setCursor(12,0);
-			lcd<<sensors.getTempC(sensorAddress[Pos-1]);
+			lcd<<sensors.getTempC(sensorAddress[Pos]);
 		}
 	}
 	
@@ -974,7 +974,7 @@ void menu_setsensors3()
 	{
 		lcd.setCursor(0,3); lcd<<F("ENREGISTREMENT...");
 		delay(700);
-		EEPROM.put(EEPROM_SENSOR_ADR+(sizeof(DeviceAddress)*(Pos-1)), sensorAddress[Pos-1]);
+		EEPROM.put(EEPROM_SENSOR_ADR+(sizeof(DeviceAddress)*(Pos)), sensorAddress[Pos]);
 		menu.next(menu_setsensors);
 	}
 	
@@ -1222,7 +1222,7 @@ void testPWMrefresh()
 {
 	lcd.setCursor(4,1); lcd<<F("            "); 
 	lcd.setCursor(3,2); printR(BIT_R0);
-	lcd.setCursor(4,1); lcd<<map(Pwm0,0,100,0,255)<<"  "<<Pwm0<<"%";
+	lcd.setCursor(4,1); lcd<<map(Pwm0,0,100,0,255)<<"  "<<(byte)Pwm0<<"%";
 }
 
 void menu_testPWM()
@@ -1274,13 +1274,7 @@ void menu_testPWM()
 
 ///////////////////////////solar state machine//////////////////////////////////
 void solar_off()
-{	
-/* 	if(solar.isFirstRun())
-	{
-		Pwm0=0;
-		Serial<<"solar_off"<<_endl;
-	} */
-	
+{		
 	setOutput(BIT_R0, 0);
 	Pwm0=0;
 	
@@ -1290,7 +1284,7 @@ void solar_off()
 	if( T[0]>(T[1]+S[0][1]) && T[1]<(S[0][0]-S[0][3]) )
 		solar.next(solar_run);
 	
-	if( S[2][0] && T[0]>S[2][1] && solar.elapsed(S[2][3]*10000) )
+	if( S[2][0] && T[0]>S[2][1] && solar.elapsed(S[2][3]*60E3) )
 		solar.next(solar_try);
 
 }
@@ -1309,7 +1303,7 @@ void solar_wait()
 	if( T[0]>(T[1]+S[0][1]) && T[1]<(S[0][0]-S[0][3]) )
 		solar.next(solar_run);
 	
-	if( S[2][0] && T[0]>S[2][1] && solar.elapsed(S[2][3]*10000) )
+	if( S[2][0] && T[0]>S[2][1] && solar.elapsed(S[2][3]*60E3) )
 		solar.next(solar_try);
 	
 	if( solar.elapsed(DELAY_SOLAR_OFF) ) solar.next(solar_off);
