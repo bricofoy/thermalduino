@@ -429,10 +429,10 @@ void datalog_start()
 		return;
 	}
 
-	logfile<<_endl<<F("date;");
+/* 	logfile<<_endl<<F("date;");
 	for(byte i=0;i<SENSOR_NBR;i++) logfile << F("F;T")<<i<<F(";");
 	logfile<<F("Pwm;");
-	for(byte i=0;i<RELAYS_NBR;i++) logfile << F("F;R")<<i<<F(";");
+	for(byte i=0;i<RELAYS_NBR;i++) logfile << F("F;R")<<i<<F(";"); */
 	logfile<<_endl;
 	logfile.close();
 
@@ -450,12 +450,48 @@ void datalog_write()
 	}
 	
 	logfile<<RTC.getS(DS1307_STR_DATE,0)<<F(" ")<<RTC.getS(DS1307_STR_TIME,0)<<F(";");
+	
 	for(byte i=0;i<SENSOR_NBR;i++) 
 	{
 		if(TForce[i]) logfile<<F("F");
 		logfile << F(";")<<T[i] <<F(";");
 	}
-	logfile<<Pwm0<<F(";");
+	
+	logfile<<(byte)Pwm0<<F(";");
+	
+	(RF&BIT_R0)?logfile<<F("F;"):logfile<<F(";");
+	(R&BIT_R0)?logfile<<F("1;"):logfile<<F("0;");
+	(RF&BIT_R1)?logfile<<F("F;"):logfile<<F(";");
+	(R&BIT_R1)?logfile<<F("1;"):logfile<<F("0;");
+	(RF&BIT_R2)?logfile<<F("F;"):logfile<<F(";");
+	(R&BIT_R2)?logfile<<F("1;"):logfile<<F("0;");	
+	(RF&BIT_R3)?logfile<<F("F;"):logfile<<F(";");
+	(R&BIT_R3)?logfile<<F("1;"):logfile<<F("0;");
+	(RF&BIT_R4)?logfile<<F("F;"):logfile<<F(";");
+	(R&BIT_R4)?logfile<<F("1;"):logfile<<F("0;");
+
+	logfile<<_endl;
+	logfile.close();
+	
+	datalog.next(datalog_wait);
+}
+/* void datalog_write()
+{
+ 	FileOK=logfile.open(LOGFILENAME, O_RDWR | O_CREAT | O_AT_END);
+	if(!FileOK)
+	{
+		SdOK=false;
+		datalog.next(datalog_start);
+		return;
+	}
+	
+	logfile<<RTC.getS(DS1307_STR_DATE,0)<<F(" ")<<RTC.getS(DS1307_STR_TIME,0)<<F(";");
+	for(byte i=0;i<SENSOR_NBR;i++) 
+	{
+		if(TForce[i]) logfile<<F("F");
+		logfile << F(";")<<T[i] <<F(";");
+	}
+	logfile<<(byte)Pwm0<<F(";");
 	for(byte i=0;i<RELAYS_NBR;i++) 
 	{
 		if(RF&(2^i)) logfile<<F("F");
@@ -465,7 +501,7 @@ void datalog_write()
 	logfile.close();
 	
 	datalog.next(datalog_wait);
-}
+} */
 	
 
 //////////////////////////menu state machine////////////////////////////////////
@@ -480,7 +516,7 @@ void menu_start()
 		lcd.print(F("Ballon"));
 		lcd.setCursor(0,1); lcd.print(F("Capteur"));
 		lcd.setCursor(0,2); lcd.print(F("Int       Ext"));
-		lcd.setCursor(0,3); lcd.print(F("Chauffage"));
+		lcd.setCursor(0,3); lcd.print(F("Chauf."));
 		
 	}
  	
@@ -494,6 +530,11 @@ void menu_start()
 		
 		lcd.setCursor(3,2); printT(7);
 		lcd.setCursor(13,2); printT(6);
+		
+		lcd.setCursor(7,3); C[0][0]?lcd<<F("ON "):lcd<<F("OFF");
+		
+		lcd.setCursor(12,3); lcd<<RTC.getS(DS1307_STR_TIME,0);
+		
 		
 		if(!FileOK)
 		{
@@ -949,7 +990,7 @@ void menu_setsensors2()
 				if (sensorAddress[Pos][i] < 16) lcd<<F("0");
 				lcd<<_HEX(sensorAddress[Pos][i]);
 			}
-			delay(800);
+			delay(750/(1<<(12-TEMPERATURE_RESOLUTION)));
 			lcd.setCursor(12,0);
 			lcd<<sensors.getTempC(sensorAddress[Pos]);
 		}
