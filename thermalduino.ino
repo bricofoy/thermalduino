@@ -23,9 +23,9 @@
 //sensor addresses EEPROM storage address
 #define EEPROM_SENSOR_ADR 	0
 #define SENSOR_NBR 			10
-#define EEPROM_PARAM_ADR	EEPROM_SENSOR_ADR + sizeof(sensorAddress)
+#define EEPROM_PARAM_ADR	EEPROM_SENSOR_ADR + sizeof(SensorAddress)
 // arrays to hold sensor addresses and temperatures
-DeviceAddress sensorAddress[SENSOR_NBR];
+DeviceAddress SensorAddress[SENSOR_NBR];
 float T[SENSOR_NBR];
 //float Offset[SENSOR_NBR];
 bool TForce[SENSOR_NBR];
@@ -90,6 +90,9 @@ char Pwm0=0;
 
 #define NUM_C0	5
 #define NUM_C1	3
+
+#define NUM_P0	4
+#define NUM_P1	3
 //arrays wich store the Sx parameters, one for each section
 char S0[NUM_S0],S1[NUM_S1],S2[NUM_S2],S3[NUM_S3];
 //array with the numbers of elements in each of the parameter arrays
@@ -97,9 +100,13 @@ const char Sn[]={NUM_S0,NUM_S1,NUM_S2,NUM_S3};
 //same thing for the Cx params
 char C0[NUM_C0],C1[NUM_C1];
 const char Cn[]={NUM_C0,NUM_C1};
+//same thing for the Px params
+char P0[NUM_P0],P1[NUM_P1];
+const char Pn[]={NUM_P0,NUM_P1};
 //pointer to the array of arrays storing the parameters
 char *S[]={S0,S1,S2,S3};
 char *C[]={C0,C1};
+char *P[]={P0,P1};
 //arrays of strings with details for each parameter
 const char *St0[]={
 	"Consigne bas ballon",
@@ -122,6 +129,7 @@ const char *St3[]={
 	"Differentiel arret",
 	"T max bas ballon"}; 	
 const char **St[]={St0,St1,St2,St3};
+
 const char *Ct0[]={
 	"ON/OFF",
 	"T jour",
@@ -133,6 +141,17 @@ const char *Ct1[]={
 	"Tps mvmt cycle s",
 	"Periode cycle x10s"}; 
 const char **Ct[]={Ct0,Ct1};
+
+const char *Pt0[]={
+	"Periode enreg. x10s",
+	"xx",
+	"xxx",
+	"xxxx"};
+const char *Pt1[]={	
+	"x",
+	"xx",
+	"xxx"}; 
+const char **Pt[]={Pt0,Pt1};
 
 // Setup a oneWire instance to communicate with any OneWire devices
 OneWire oneWire(PIN_ONE_WIRE_BUS);
@@ -256,7 +275,7 @@ void outputsWrite()
 
 void loadSensorsAddresses()
 {
-	EEPROM.get(EEPROM_SENSOR_ADR,sensorAddress);
+	EEPROM.get(EEPROM_SENSOR_ADR,SensorAddress);
 }
 
 void saveParams()
@@ -270,10 +289,15 @@ void saveParams()
 	address += sizeof(S2);
 	EEPROM.put(address,S3);
 	address += sizeof(S3);
+	
 	EEPROM.put(address,C0);
 	address += sizeof(C0);	
 	EEPROM.put(address,C1);
-	//address += sizeof(C1);
+	address += sizeof(C1);
+	
+	EEPROM.put(address,P0);
+	address += sizeof(P0);
+	EEPROM.put(address,P1);
 }
 void loadParams()
 {
@@ -290,14 +314,18 @@ void loadParams()
 	EEPROM.get(address,C0);
 	address += sizeof(C0);	
 	EEPROM.get(address,C1);
-	//address += sizeof(C1);
+	address += sizeof(C1);	
+	
+	EEPROM.get(address,P0);
+	address += sizeof(P0);
+	EEPROM.get(address,P1);
 }
 
 void setSensorsResolution()
 {
 	for (byte i=0;i<SENSOR_NBR; i++)
 	{
-		sensors.setResolution(sensorAddress[i], TEMPERATURE_RESOLUTION);
+		sensors.setResolution(SensorAddress[i], TEMPERATURE_RESOLUTION);
 	}
 }
 
@@ -391,7 +419,7 @@ void gettemp_read()
 	if (i<SENSOR_NBR)
 	{
 		if(!TForce[i])
-			T[i] = sensors.getTempC(sensorAddress[i]);
+			T[i] = sensors.getTempC(SensorAddress[i]);
 	}
 	else gettemp.next(gettemp_request);
 }
@@ -399,7 +427,7 @@ void gettemp_read()
 /////////////////////////datalog state machine//////////////////////////////////
 void datalog_wait()
 {
-	if(datalog.elapsed(DELAY_LOG_PERIOD))
+	if(datalog.elapsed(P[0][0]*1E4)) //delay unit is x10s so we *1000 to get ms
 		datalog.next(datalog_write);
 }
 
@@ -611,8 +639,8 @@ void menu_param()
 		lcd.clear();
 		lcd<<(char)126<<F("Reglages horloge");
 		lcd.setCursor(1,1); lcd<<F("Reglages sondes");
-		lcd.setCursor(1,2); lcd<<F("Reglages solaire");
-		lcd.setCursor(1,3); lcd<<F("Reglages chauffage");
+		lcd.setCursor(1,2); lcd<<F("Parametres solaire");
+		lcd.setCursor(1,3); lcd<<F("Param. chauffage");
 		Pos=0;
 	}
 
@@ -645,7 +673,7 @@ void menu_param2()
 		lcd.clear();
 		lcd<<(char)126<<F("Forcage relais");
 		lcd.setCursor(1,1); lcd<<F("Forcage temperature");
-		lcd.setCursor(1,2); lcd<<F("xxx");
+		lcd.setCursor(1,2); lcd<<F("Parametres systeme");
 		lcd.setCursor(1,3); lcd<<F("testPWM");
 		Pos=0;
 	}
@@ -664,7 +692,7 @@ void menu_param2()
 		{
 			case 0 : { menu.next(menu_forceR); Pos=0; break; }
 			case 1 : { menu.next(menu_forceT); Pos=0; break; }
-			case 2 : { Pos=0; break; }
+			case 2 : { menu.next(menu_setP); Pos=0; break; }
 			case 3 : { menu.next(menu_testPWM); Pos=0; break; }
 		}
 				
@@ -962,20 +990,20 @@ void menu_setsensors2()
 		lcd<<F("Sonde T")<<(byte)Pos;
 		lcd.setCursor(0,1);
 		sensors.getDeviceCount();
-		if (!sensors.getAddress(sensorAddress[Pos], 0)) lcd<<F("erreur sonde");
+		if (!sensors.getAddress(SensorAddress[Pos], 0)) lcd<<F("erreur sonde");
 		else {
-			sensors.setResolution(sensorAddress[Pos], TEMPERATURE_RESOLUTION);
+			sensors.setResolution(SensorAddress[Pos], TEMPERATURE_RESOLUTION);
 			sensors.requestTemperatures();
 					
 			//print sensor address
 			for (uint8_t i = 0; i < 8; i++){
 				// zero pad the address if necessary
-				if (sensorAddress[Pos][i] < 16) lcd<<F("0");
-				lcd<<_HEX(sensorAddress[Pos][i]);
+				if (SensorAddress[Pos][i] < 16) lcd<<F("0");
+				lcd<<_HEX(SensorAddress[Pos][i]);
 			}
 			delay(750/(1<<(12-TEMPERATURE_RESOLUTION)));
 			lcd.setCursor(12,0);
-			lcd<<sensors.getTempC(sensorAddress[Pos]);
+			lcd<<sensors.getTempC(SensorAddress[Pos]);
 		}
 	}
 	
@@ -998,7 +1026,7 @@ void menu_setsensors3()
 	{
 		lcd.setCursor(0,3); lcd<<F("ENREGISTREMENT...");
 		delay(700);
-		EEPROM.put(EEPROM_SENSOR_ADR+(sizeof(DeviceAddress)*(Pos)), sensorAddress[Pos]);
+		EEPROM.put(EEPROM_SENSOR_ADR+(sizeof(DeviceAddress)*(Pos)), SensorAddress[Pos]);
 		menu.next(menu_setsensors);
 	}
 	
@@ -1048,6 +1076,7 @@ void menu_setS()
 	if(btn.state(BTN_LONGCLICK) )
 		menu.next(menu_param);
 }
+
 void menu_setC()
 {
 	if (menu.isFirstRun()) 
@@ -1076,6 +1105,34 @@ void menu_setC()
 		menu.next(menu_param);
 }
 
+void menu_setP()
+{
+	if (menu.isFirstRun()) 
+	{
+		lcd.clear();
+		lcd<<F("Parametres systeme");
+		lcd.setCursor(1,1); lcd<< F("P0 enreg.");
+		lcd.setCursor(1,2); lcd<< F("P1 xx");
+		//lcd.setCursor(1,3); lcd<< F("S3 avance");
+		//lcd.setCursor(11,1); lcd<<F("S4 protec");
+		Pos=0;Page=0;
+		arrow(2);		
+	}
+
+
+	if (Counter!=0) arrow(2);
+	
+	if(btn.state(BTN_CLICK))
+	{
+		Page=Pos;
+		Pos=0;
+		menu.next(menu_setPxx);
+	}
+				
+	if(btn.state(BTN_LONGCLICK) )
+		menu.next(menu_param);
+}
+
 void explainS()
 {
 	lcd.setCursor(0,0);
@@ -1090,6 +1147,14 @@ void explainC()
 	lcd<<F("                    ");
 	lcd.setCursor(0,0);
 	lcd<<Ct[Page][Pos];
+}
+
+void explainP()
+{
+	lcd.setCursor(0,0);
+	lcd<<F("                    ");
+	lcd.setCursor(0,0);
+	lcd<<Pt[Page][Pos];
 }
 
 void menu_setSxx()
@@ -1155,6 +1220,39 @@ void menu_setCxx()
 	if(btn.state(BTN_LONGCLICK))
 		menu.next(menu_setC);
 }
+
+void menu_setPxx()
+{
+	if (menu.isFirstRun()) 
+	{
+		lcd.clear();
+				
+		for(byte i=0;i<Pn[Page];i++)
+		{
+			if(i<3) lcd.setCursor(1,i+1); 
+			else lcd.setCursor(11,i-2);
+			lcd<<F("P")<<(int)Page<<F(".")<<i<<F(":"); 
+			lcd<<(int)P[Page][i];
+		}
+		arrow(Pn[Page]);
+		explainP();
+	}
+
+
+	if (Counter!=0) 
+	{
+		arrow(Pn[Page]);
+		explainP();
+	}
+		
+	
+	if(btn.state(BTN_CLICK))
+		menu.next(menu_editPxx);
+				
+	if(btn.state(BTN_LONGCLICK))
+		menu.next(menu_setP);
+}
+
 void menu_editSxx()
 {
 	if (menu.isFirstRun()) 
@@ -1237,6 +1335,50 @@ void menu_editCxx()
 	if(btn.state(BTN_LONGCLICK))
 	{
 		menu.next(menu_setCxx);
+		lcd.noBlink();
+		loadParams(); //discard the modified value : get the old one from eeprom
+	}
+}
+
+void menu_editPxx()
+{
+	if (menu.isFirstRun()) 
+	{
+		arrow();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd.blink();
+	}	
+	
+	if (Counter!=0) {
+		P[Page][Pos]+=encoderCount();
+		arrow();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd<<F("    ");
+		lcd.moveCursorLeft();
+		lcd.moveCursorLeft();
+		lcd.moveCursorLeft();
+		lcd.moveCursorLeft();
+		lcd<<(int)P[Page][Pos];
+	}
+	
+	if(btn.state(BTN_CLICK))
+	{
+		menu.next(menu_setPxx);
+		lcd.noBlink();
+		saveParams(); //store the modified value
+	}
+	
+	if(btn.state(BTN_LONGCLICK))
+	{
+		menu.next(menu_setPxx);
 		lcd.noBlink();
 		loadParams(); //discard the modified value : get the old one from eeprom
 	}
