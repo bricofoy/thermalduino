@@ -51,11 +51,12 @@ char Counter=0;
 
 #define PIN_SD_CS	SS
 #define PIN_SD_ALIM 49
-#define LOGFILENAME	"datalog.txt"
+#define LOGFILENAME	"datalog"
+#define LOGFILEEXT 	".csv"
 // File system object.
-SdFat sd;
+SdFat Sd;
 // Log file.
-SdFile logfile;
+SdFile Logfile;
 bool SdOK=false,FileOK=false;
 
 
@@ -415,93 +416,75 @@ void datalog_start()
 	digitalWrite(PIN_SD_ALIM,HIGH);	//turn on card power
 	if(!datalog.elapsed(500)) return; //leave some time for the card to power up
 	
-	SdOK=sd.begin(PIN_SD_CS, SPI_HALF_SPEED);
+	SdOK=Sd.begin(PIN_SD_CS, SPI_HALF_SPEED);
 	if(!SdOK) //something gone wrong so retry later
 	{
 		datalog.next(datalog_wait_card);
 		return;
 	}
  	
-	FileOK=logfile.open(LOGFILENAME, O_RDWR | O_CREAT | O_AT_END);
+/*	FileOK=Logfile.open(LOGFILENAME, O_RDWR | O_CREAT | O_AT_END);
 	if(!FileOK)
 	{
 		datalog.next(datalog_wait_card);
 		return;
 	}
 
-/* 	logfile<<_endl<<F("date;");
-	for(byte i=0;i<SENSOR_NBR;i++) logfile << F("F;T")<<i<<F(";");
-	logfile<<F("Pwm;");
-	for(byte i=0;i<RELAYS_NBR;i++) logfile << F("F;R")<<i<<F(";"); */
-	logfile<<_endl;
-	logfile.close();
-
-	datalog.next(datalog_write);				
+/* 	Logfile<<_endl<<F("date;");
+	for(byte i=0;i<SENSOR_NBR;i++) Logfile << F("F;T")<<i<<F(";");
+	Logfile<<F("Pwm;");
+	for(byte i=0;i<RELAYS_NBR;i++) Logfile << F("F;R")<<i<<F(";"); 
+	Logfile<<_endl;
+	Logfile.close();*/
+ 	datalog.next(datalog_write);				
 }
+
+
 
 void datalog_write()
 {
- 	FileOK=logfile.open(LOGFILENAME, O_RDWR | O_CREAT | O_AT_END);
+ 	String logfilename;
+ 	
+	logfilename+=LOGFILENAME;
+	logfilename+=DateTime.year;
+	logfilename+='-';
+	logfilename+=DateTime.month;
+	logfilename+=LOGFILEEXT;
+	FileOK=Logfile.open(logfilename.c_str(), O_RDWR | O_CREAT | O_AT_END);
 	if(!FileOK)
 	{
 		SdOK=false;
-		datalog.next(datalog_start);
+		datalog.next(datalog_wait_card);
 		return;
 	}
 	
-	logfile<<RTC.getS(DS1307_STR_DATE,0)<<F(" ")<<RTC.getS(DS1307_STR_TIME,0)<<F(";");
+	Logfile<<RTC.getS(DS1307_STR_DATE,0)<<F(" ")<<RTC.getS(DS1307_STR_TIME,0)<<F(";");
 	
 	for(byte i=0;i<SENSOR_NBR;i++) 
 	{
-		if(TForce[i]) logfile<<F("F");
-		logfile << F(";")<<T[i] <<F(";");
+		if(TForce[i]) Logfile<<F("F");
+		Logfile << F(";")<<T[i] <<F(";");
 	}
 	
-	logfile<<(byte)Pwm0<<F(";");
+	Logfile<<(byte)Pwm0<<F(";");
 	
-	(RF&BIT_R0)?logfile<<F("F;"):logfile<<F(";");
-	(R&BIT_R0)?logfile<<F("1;"):logfile<<F("0;");
-	(RF&BIT_R1)?logfile<<F("F;"):logfile<<F(";");
-	(R&BIT_R1)?logfile<<F("1;"):logfile<<F("0;");
-	(RF&BIT_R2)?logfile<<F("F;"):logfile<<F(";");
-	(R&BIT_R2)?logfile<<F("1;"):logfile<<F("0;");	
-	(RF&BIT_R3)?logfile<<F("F;"):logfile<<F(";");
-	(R&BIT_R3)?logfile<<F("1;"):logfile<<F("0;");
-	(RF&BIT_R4)?logfile<<F("F;"):logfile<<F(";");
-	(R&BIT_R4)?logfile<<F("1;"):logfile<<F("0;");
+	(RF&BIT_R0)?Logfile<<F("F;"):Logfile<<F(";");
+	(R&BIT_R0)?Logfile<<F("1;"):Logfile<<F("0;");
+	(RF&BIT_R1)?Logfile<<F("F;"):Logfile<<F(";");
+	(R&BIT_R1)?Logfile<<F("1;"):Logfile<<F("0;");
+	(RF&BIT_R2)?Logfile<<F("F;"):Logfile<<F(";");
+	(R&BIT_R2)?Logfile<<F("1;"):Logfile<<F("0;");	
+	(RF&BIT_R3)?Logfile<<F("F;"):Logfile<<F(";");
+	(R&BIT_R3)?Logfile<<F("1;"):Logfile<<F("0;");
+	(RF&BIT_R4)?Logfile<<F("F;"):Logfile<<F(";");
+	(R&BIT_R4)?Logfile<<F("1;"):Logfile<<F("0;");
 
-	logfile<<_endl;
-	logfile.close();
+	Logfile<<_endl;
+	Logfile.close();
 	
 	datalog.next(datalog_wait);
-}
-/* void datalog_write()
-{
- 	FileOK=logfile.open(LOGFILENAME, O_RDWR | O_CREAT | O_AT_END);
-	if(!FileOK)
-	{
-		SdOK=false;
-		datalog.next(datalog_start);
-		return;
-	}
-	
-	logfile<<RTC.getS(DS1307_STR_DATE,0)<<F(" ")<<RTC.getS(DS1307_STR_TIME,0)<<F(";");
-	for(byte i=0;i<SENSOR_NBR;i++) 
-	{
-		if(TForce[i]) logfile<<F("F");
-		logfile << F(";")<<T[i] <<F(";");
-	}
-	logfile<<(byte)Pwm0<<F(";");
-	for(byte i=0;i<RELAYS_NBR;i++) 
-	{
-		if(RF&(2^i)) logfile<<F("F");
-		logfile << F(";")<< ((R&(2^i))&&1) << F(";");
-	}
-	logfile<<_endl;
-	logfile.close();
-	
-	datalog.next(datalog_wait);
-} */
+}      
+
 	
 
 //////////////////////////menu state machine////////////////////////////////////
