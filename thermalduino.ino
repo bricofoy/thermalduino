@@ -92,7 +92,8 @@ char Pwm0=0;
 #define NUM_S3	4
 
 #define NUM_C0	5
-#define NUM_C1	3
+#define NUM_C1	6
+#define NUM_C2	4
 
 #define NUM_P0	4
 #define NUM_P1	3
@@ -100,22 +101,22 @@ char Pwm0=0;
 #define NUM_B0	3
 
 //arrays wich store the Sx parameters, one for each section
-char S0[NUM_S0],S1[NUM_S1],S2[NUM_S2],S3[NUM_S3];
+char S_0[NUM_S0],S_1[NUM_S1],S_2[NUM_S2],S_3[NUM_S3];
 //array with the numbers of elements in each of the parameter arrays
 const char Sn[]={NUM_S0,NUM_S1,NUM_S2,NUM_S3};
 //same thing for the Cx params
-char C0[NUM_C0],C1[NUM_C1];
+char C_0[NUM_C0],C_1[NUM_C1];
 const char Cn[]={NUM_C0,NUM_C1};
 //same thing for the Px params
-char P0[NUM_P0],P1[NUM_P1];
+char P_0[NUM_P0],P_1[NUM_P1];
 const char Pn[]={NUM_P0,NUM_P1};
 //same thing for the Bx params
 char B_0[NUM_B0];
 const char Bn[]={NUM_B0};
 //pointer to the array of arrays storing the parameters
-char *S[]={S0,S1,S2,S3};
-char *C[]={C0,C1};
-char *P[]={P0,P1};
+char *S[]={S_0,S_1,S_2,S_3};
+char *C[]={C_0,C_1,C_2};
+char *P[]={P_0,P_1};
 char *B[]={B_0};
 //arrays of strings with details for each parameter
 const char *St0[]={
@@ -141,16 +142,25 @@ const char *St3[]={
 const char **St[]={St0,St1,St2,St3};
 
 const char *Ct0[]={
-	"ON/OFF",
-	"T jour",
-	"T nuit",
+	"OFF(0)/ON(1)/prog(2)",
+	"T consigne int jour",
+	"T consigne int nuit",
 	"H jour",
 	"H nuit"};
 const char *Ct1[]={	
 	"Tps mvmt complet s",
-	"Tps manoeuvre max  s",
-	"Tps manoeuvre min  s"}; 
-const char **Ct[]={Ct0,Ct1};
+	"Tps manoeuvre max s",
+	"Tps manoeuvre min s",
+	"Kp",
+	"Ki",
+	"Kd"};
+const char *Ct2[]={
+	"Pente",
+	"T a Text=0",
+	"xxx",
+	"xxxx"};
+	
+const char **Ct[]={Ct0,Ct1,Ct2};
 
 const char *Pt0[]={
 	"Periode enreg. x10s",
@@ -303,24 +313,26 @@ void loadSensorsAddresses()
 void saveParams()
 {
 	int address = EEPROM_PARAM_ADR;
-	EEPROM.put(address,S0);
-	address += sizeof(S0);
-	EEPROM.put(address,S1);
-	address += sizeof(S1);
-	EEPROM.put(address,S2);
-	address += sizeof(S2);
-	EEPROM.put(address,S3);
-	address += sizeof(S3);
+	EEPROM.put(address,S_0);
+	address += sizeof(S_0);
+	EEPROM.put(address,S_1);
+	address += sizeof(S_1);
+	EEPROM.put(address,S_2);
+	address += sizeof(S_2);
+	EEPROM.put(address,S_3);
+	address += sizeof(S_3);
 	
-	EEPROM.put(address,C0);
-	address += sizeof(C0);	
-	EEPROM.put(address,C1);
-	address += sizeof(C1);
+	EEPROM.put(address,C_0);
+	address += sizeof(C_0);	
+	EEPROM.put(address,C_1);
+	address += sizeof(C_1);
+	EEPROM.put(address,C_2);
+	address += sizeof(C_2);
 	
-	EEPROM.put(address,P0);
-	address += sizeof(P0);
-	EEPROM.put(address,P1);
-	address += sizeof(P1);
+	EEPROM.put(address,P_0);
+	address += sizeof(P_0);
+	EEPROM.put(address,P_1);
+	address += sizeof(P_1);
 	
 	EEPROM.put(address,B_0);
 	//address += sizeof(B_0);	
@@ -328,24 +340,26 @@ void saveParams()
 void loadParams()
 {
 	int address = EEPROM_PARAM_ADR;
-	EEPROM.get(address,S0);
-	address += sizeof(S0);
-	EEPROM.get(address,S1);
-	address += sizeof(S1);
-	EEPROM.get(address,S2);
-	address += sizeof(S2);
-	EEPROM.get(address,S3);
-	address += sizeof(S3);
+	EEPROM.get(address,S_0);
+	address += sizeof(S_0);
+	EEPROM.get(address,S_1);
+	address += sizeof(S_1);
+	EEPROM.get(address,S_2);
+	address += sizeof(S_2);
+	EEPROM.get(address,S_3);
+	address += sizeof(S_3);
 
-	EEPROM.get(address,C0);
-	address += sizeof(C0);	
-	EEPROM.get(address,C1);
-	address += sizeof(C1);	
+	EEPROM.get(address,C_0);
+	address += sizeof(C_0);	
+	EEPROM.get(address,C_1);
+	address += sizeof(C_1);	
+	EEPROM.get(address,C_2);
+	address += sizeof(C_2);
 	
-	EEPROM.get(address,P0);
-	address += sizeof(P0);
-	EEPROM.get(address,P1);	
-	address += sizeof(P1);
+	EEPROM.get(address,P_0);
+	address += sizeof(P_0);
+	EEPROM.get(address,P_1);	
+	address += sizeof(P_1);
 	
 	EEPROM.get(address,B_0);
 	//address += sizeof(B_0);
@@ -1136,7 +1150,7 @@ void menu_setS()
 		lcd<<F("Parametres solaire");
 		lcd.setCursor(1,1); lcd<< F("S0 base");
 		lcd.setCursor(1,2); lcd<< F("S1 pompe");
-		lcd.setCursor(1,3); lcd<< F("S2 avance");
+		lcd.setCursor(1,3); lcd<< F("S2 c tube");
 		lcd.setCursor(11,1); lcd<<F("S3 protec");
 		Pos=0;Page=0;
 		arrow(4);		
@@ -1164,14 +1178,14 @@ void menu_setC()
 		lcd<<F("Parametres chauffage");
 		lcd.setCursor(1,1); lcd<< F("C0 base");
 		lcd.setCursor(1,2); lcd<< F("C1 vanne");
-		//lcd.setCursor(1,3); lcd<< F("S3 avance");
+		lcd.setCursor(1,3); lcd<< F("C2 loi d'eau");
 		//lcd.setCursor(11,1); lcd<<F("S4 protec");
 		Pos=0;Page=0;
-		arrow(2);		
+		arrow(3);		
 	}
 
 
-	if (Counter!=0) arrow(2);
+	if (Counter!=0) arrow(3);
 	
 	if(btn.state(BTN_CLICK))
 	{
@@ -1192,7 +1206,7 @@ void menu_setP()
 		lcd<<F("Parametres systeme");
 		lcd.setCursor(1,1); lcd<< F("P0 enreg.");
 		lcd.setCursor(1,2); lcd<< F("P1 interface");
-		//lcd.setCursor(1,3); lcd<< F("S3 avance");
+		//lcd.setCursor(1,3); lcd<< F("S_3 avance");
 		//lcd.setCursor(11,1); lcd<<F("S4 protec");
 		Pos=0;Page=0;
 		arrow(2);		
