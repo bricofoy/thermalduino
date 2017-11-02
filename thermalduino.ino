@@ -59,6 +59,9 @@ SdFat Sd;
 SdFile Logfile;
 bool SdOK=false,FileOK=false;
 
+//mixing valve movements
+#define MVOPEN 		1
+#define MVCLOSE 	0
 
 //outputs
 #define PIN_PWM0	10	//solar pump speed signal
@@ -93,6 +96,9 @@ char Pwm0=0;
 
 #define NUM_P0	4
 #define NUM_P1	3
+
+#define NUM_B0	3
+
 //arrays wich store the Sx parameters, one for each section
 char S0[NUM_S0],S1[NUM_S1],S2[NUM_S2],S3[NUM_S3];
 //array with the numbers of elements in each of the parameter arrays
@@ -103,10 +109,14 @@ const char Cn[]={NUM_C0,NUM_C1};
 //same thing for the Px params
 char P0[NUM_P0],P1[NUM_P1];
 const char Pn[]={NUM_P0,NUM_P1};
+//same thing for the Bx params
+char B_0[NUM_B0];
+const char Bn[]={NUM_B0};
 //pointer to the array of arrays storing the parameters
 char *S[]={S0,S1,S2,S3};
 char *C[]={C0,C1};
 char *P[]={P0,P1};
+char *B[]={B_0};
 //arrays of strings with details for each parameter
 const char *St0[]={
 	"Consigne bas ballon",
@@ -116,12 +126,12 @@ const char *St1[]={
 	"PWM max %",
 	"PWM min %",
 	"Increment %",
-	"Periode cycle (s)",
+	"Periode cycle s",
 	"Ecart T0-T1 voulu"}; 
 const char *St2[]={	
 	"Demarrage periodique",
 	"T mini capteur",
-	"Duree impulsions (s)",
+	"Duree impulsions s",
 	"Periode (mn)"}; 
 const char *St3[]={	
 	"Protection surchauff",
@@ -138,8 +148,8 @@ const char *Ct0[]={
 	"H nuit"};
 const char *Ct1[]={	
 	"Tps mvmt complet s",
-	"Tps mvmt cycle s",
-	"Periode cycle x10s"}; 
+	"Tps manoeuvre max  s",
+	"Tps manoeuvre min  s"}; 
 const char **Ct[]={Ct0,Ct1};
 
 const char *Pt0[]={
@@ -148,10 +158,16 @@ const char *Pt0[]={
 	"xxx",
 	"xxxx"};
 const char *Pt1[]={	
-	"x",
+	"Delai sortie menu s",
 	"xx",
 	"xxx"}; 
 const char **Pt[]={Pt0,Pt1};
+
+const char *Bt0[]={	
+	"T demarrage pompe",
+	"differentiel arret",
+	"T max bas ballon"}; 
+const char **Bt[]={Bt0};
 
 // Setup a oneWire instance to communicate with any OneWire devices
 OneWire oneWire(PIN_ONE_WIRE_BUS);
@@ -244,6 +260,12 @@ void setOutput(byte pin, bool state)
 		else R &= ~pin; //unset the <pin> bit		
 }
 
+void moveMixValve(bool direction)
+{
+	setOutput(PIN_R2, direction);
+	setOutput(PIN_R3, 1);
+}
+
 
 void outputsWrite()
 {
@@ -298,6 +320,10 @@ void saveParams()
 	EEPROM.put(address,P0);
 	address += sizeof(P0);
 	EEPROM.put(address,P1);
+	address += sizeof(P1);
+	
+	EEPROM.put(address,B_0);
+	//address += sizeof(B_0);	
 }
 void loadParams()
 {
@@ -318,7 +344,11 @@ void loadParams()
 	
 	EEPROM.get(address,P0);
 	address += sizeof(P0);
-	EEPROM.get(address,P1);
+	EEPROM.get(address,P1);	
+	address += sizeof(P1);
+	
+	EEPROM.get(address,B_0);
+	//address += sizeof(B_0);
 }
 
 void setSensorsResolution()
@@ -565,7 +595,10 @@ void menu_start()
 		menu.next(menu_start2);
 	
 	if(btn.state(BTN_CLICK)) 
-		menu.next(menu_param);
+		menu.next(menu_param);	
+	
+	if(btn.state(BTN_LONGCLICK)) 
+		menu.next(menu_start);
 }
 
 void menu_start2()
@@ -591,8 +624,13 @@ void menu_start2()
 	
 	if(Counter<0 || menu.elapsed(DELAY_MENU_BACK))
 		menu.next(menu_start);
+	
 	if(encoderCount()>0)
 		menu.next(menu_start3);	
+	
+	if(btn.state(BTN_CLICK)) 
+		menu.next(menu_param);
+	
 	if(btn.state(BTN_LONGCLICK)) 
 		menu.next(menu_forceT);
 
@@ -627,6 +665,10 @@ void menu_start3()
 
 	if(menu.elapsed(DELAY_MENU_BACK))
 		menu.next(menu_start);	
+	
+	if(btn.state(BTN_CLICK)) 
+		menu.next(menu_start3);	
+	
 	if(btn.state(BTN_LONGCLICK)) 
 		menu.next(menu_forceR);
 }
@@ -638,8 +680,8 @@ void menu_param()
 	{
 		lcd.clear();
 		lcd<<(char)126<<F("Reglages horloge");
-		lcd.setCursor(1,1); lcd<<F("Reglages sondes");
-		lcd.setCursor(1,2); lcd<<F("Parametres solaire");
+		lcd.setCursor(1,1); lcd<<F("Param. sondes");
+		lcd.setCursor(1,2); lcd<<F("Param. solaire");
 		lcd.setCursor(1,3); lcd<<F("Param. chauffage");
 		Pos=0;
 	}
@@ -671,10 +713,10 @@ void menu_param2()
 	if (menu.isFirstRun()) 
 	{
 		lcd.clear();
-		lcd<<(char)126<<F("Forcage relais");
-		lcd.setCursor(1,1); lcd<<F("Forcage temperature");
-		lcd.setCursor(1,2); lcd<<F("Parametres systeme");
-		lcd.setCursor(1,3); lcd<<F("testPWM");
+		lcd<<(char)126<<F("Param. bouilleur");
+		lcd.setCursor(1,1); lcd<<F("Param. systeme");
+		lcd.setCursor(1,2); lcd<<F("xxx");
+		lcd.setCursor(1,3); lcd<<F("Manuel");
 		Pos=0;
 	}
 
@@ -690,13 +732,50 @@ void menu_param2()
 	if(btn.state(BTN_CLICK))
 		switch (Pos)
 		{
-			case 0 : { menu.next(menu_forceR); Pos=0; break; }
-			case 1 : { menu.next(menu_forceT); Pos=0; break; }
-			case 2 : { menu.next(menu_setP); Pos=0; break; }
-			case 3 : { menu.next(menu_testPWM); Pos=0; break; }
+			case 0 : { menu.next(menu_setB); Pos=0; break; }
+			case 1 : { menu.next(menu_setP); Pos=0; break; }
+			case 2 : { Pos=0; break; }
+			case 3 : { menu.next(menu_param_manu); Pos=0; break; }
 		}
 				
 	if(btn.state(BTN_LONGCLICK) || menu.elapsed(DELAY_MENU_EXIT_PARAM))
+		menu.next(menu_start);
+}
+
+void menu_param_manu()
+{	
+	if (menu.isFirstRun()) 
+	{
+		lcd.clear();
+		lcd<<(char)126<<F("Forcage relais");
+		lcd.setCursor(1,1); lcd<<F("Forcage temperature");
+		lcd.setCursor(1,2); lcd<<F("xxx");
+		lcd.setCursor(1,3); lcd<<F("test PWM");
+		Pos=0;
+	}
+
+
+	if (Counter!=0)
+	{
+		lcd.setCursor(0,Pos); lcd.print(F(" "));
+		Pos+=encoderCount();
+		if (Pos>3) Pos=3;
+		if (Pos<0) Pos=0;
+		lcd.setCursor(0,Pos); lcd<<(char)126;
+	}
+	if(btn.state(BTN_CLICK))
+		switch (Pos)
+		{
+			case 0 : { menu.next(menu_forceR); Pos=0; break; }
+			case 1 : { menu.next(menu_forceT); Pos=0; break; }
+			case 2 : { Pos=0; break; }
+			case 3 : { menu.next(menu_testPWM); Pos=0; break; }
+		}
+				
+	if(btn.state(BTN_LONGCLICK))
+		menu.next(menu_param2);
+	
+	if(menu.elapsed(DELAY_MENU_EXIT_PARAM))
 		menu.next(menu_start);
 }
 
@@ -1112,7 +1191,7 @@ void menu_setP()
 		lcd.clear();
 		lcd<<F("Parametres systeme");
 		lcd.setCursor(1,1); lcd<< F("P0 enreg.");
-		lcd.setCursor(1,2); lcd<< F("P1 xx");
+		lcd.setCursor(1,2); lcd<< F("P1 interface");
 		//lcd.setCursor(1,3); lcd<< F("S3 avance");
 		//lcd.setCursor(11,1); lcd<<F("S4 protec");
 		Pos=0;Page=0;
@@ -1127,6 +1206,30 @@ void menu_setP()
 		Page=Pos;
 		Pos=0;
 		menu.next(menu_setPxx);
+	}
+				
+	if(btn.state(BTN_LONGCLICK) )
+		menu.next(menu_param);
+}
+
+void menu_setB()
+{
+	if (menu.isFirstRun()) 
+	{
+		lcd.clear();
+		lcd<<F("Parametres bouilleur");
+		lcd.setCursor(1,1); lcd<< F("B0 base");
+		Pos=0;Page=0;
+		arrow(1);		
+	}
+
+	if (Counter!=0) arrow(1);
+	
+	if(btn.state(BTN_CLICK))
+	{
+		Page=Pos;
+		Pos=0;
+		menu.next(menu_setBxx);
 	}
 				
 	if(btn.state(BTN_LONGCLICK) )
@@ -1155,6 +1258,14 @@ void explainP()
 	lcd<<F("                    ");
 	lcd.setCursor(0,0);
 	lcd<<Pt[Page][Pos];
+}
+
+void explainB()
+{
+	lcd.setCursor(0,0);
+	lcd<<F("                    ");
+	lcd.setCursor(0,0);
+	lcd<<Bt[Page][Pos];
 }
 
 void menu_setSxx()
@@ -1253,6 +1364,38 @@ void menu_setPxx()
 		menu.next(menu_setP);
 }
 
+void menu_setBxx()
+{
+	if (menu.isFirstRun()) 
+	{
+		lcd.clear();
+				
+		for(byte i=0;i<Bn[Page];i++)
+		{
+			if(i<3) lcd.setCursor(1,i+1); 
+			else lcd.setCursor(11,i-2);
+			lcd<<F("B")<<(int)Page<<F(".")<<i<<F(":"); 
+			lcd<<(int)B[Page][i];
+		}
+		arrow(Bn[Page]);
+		explainB();
+	}
+
+
+	if (Counter!=0) 
+	{
+		arrow(Bn[Page]);
+		explainB();
+	}
+		
+	
+	if(btn.state(BTN_CLICK))
+		menu.next(menu_editBxx);
+				
+	if(btn.state(BTN_LONGCLICK))
+		menu.next(menu_setB);
+}
+
 void menu_editSxx()
 {
 	if (menu.isFirstRun()) 
@@ -1296,6 +1439,7 @@ void menu_editSxx()
 		loadParams(); //discard the modified value : get the old one from eeprom
 	}
 }
+
 void menu_editCxx()
 {
 	if (menu.isFirstRun()) 
@@ -1379,6 +1523,50 @@ void menu_editPxx()
 	if(btn.state(BTN_LONGCLICK))
 	{
 		menu.next(menu_setPxx);
+		lcd.noBlink();
+		loadParams(); //discard the modified value : get the old one from eeprom
+	}
+}
+
+void menu_editBxx()
+{
+	if (menu.isFirstRun()) 
+	{
+		arrow();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd.blink();
+	}	
+	
+	if (Counter!=0) {
+		B[Page][Pos]+=encoderCount();
+		arrow();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd.moveCursorRight();
+		lcd<<F("    ");
+		lcd.moveCursorLeft();
+		lcd.moveCursorLeft();
+		lcd.moveCursorLeft();
+		lcd.moveCursorLeft();
+		lcd<<(int)B[Page][Pos];
+	}
+	
+	if(btn.state(BTN_CLICK))
+	{
+		menu.next(menu_setBxx);
+		lcd.noBlink();
+		saveParams(); //store the modified value
+	}
+	
+	if(btn.state(BTN_LONGCLICK))
+	{
+		menu.next(menu_setBxx);
 		lcd.noBlink();
 		loadParams(); //discard the modified value : get the old one from eeprom
 	}
@@ -1579,4 +1767,46 @@ void solarRun_inc()
 		Pwm0=S[1][0];
 	
 	solarRun.next(solarRun_wait);
+}
+
+////////////////////////heat state machine//////////////////////////////////////
+void heat_close()
+{
+	moveMixValve(MVCLOSE);
+	
+	if(heat.elapsed(C[1][0]))
+		heat.next(heat_off);
+}
+
+void heat_off()
+{
+}
+
+////////////////////////boiler state machine////////////////////////////////////
+void boiler_wait()
+{
+	if(T[8]>B[0][0])
+		boiler.next(boiler_run);
+}
+
+void boiler_run()
+{
+	setOutput(BIT_R4, 1);
+	
+	if(T[8]<(B[0][0]-B[0][1]))
+		boiler.next(boiler_wait);
+	
+	if(T[1]>B[0][2])
+		boiler.next(boiler_err);
+}
+
+void boiler_err()
+{
+	if(boiler.isFirstRun())
+		{} //message erreur tank overheat
+	
+	setOutput(BIT_R4, 1);
+	
+	if((T[1]<B[0][2])||(T[8]<(B[0][0]-B[0][1])))
+		boiler.next(boiler_run);
 }
