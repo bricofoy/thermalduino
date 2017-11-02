@@ -17,6 +17,7 @@
 #include <SPI.h>
 #include <SdFat.h>
 #include <Streaming.h>
+#include <PID_v1.h>
 
 #include <avr/wdt.h> //watchdog timer
 
@@ -29,6 +30,7 @@ DeviceAddress SensorAddress[SENSOR_NBR];
 float T[SENSOR_NBR];
 //float Offset[SENSOR_NBR];
 bool TForce[SENSOR_NBR];
+bool Hon;
  
 #define TEMPERATURE_RESOLUTION 9 //0,5°C sensor acccuracy.
 
@@ -37,7 +39,7 @@ bool TForce[SENSOR_NBR];
 #define DELAY_MENU_BACK			600E3	//10 minutes
 #define DELAY_MENU_EXIT_PARAM 	40E3	//40 seconds
 #define DELAY_MENU_REFRESH		1500
-#define DELAY_LOG_PERIOD		5E3	
+//#define DELAY_LOG_PERIOD		5E3	
 #define DELAY_SDINIT			20E3
 #define DELAY_SOLAR_OFF			1800E3	//30 minutes. delay before switching off
 										//solar pump power
@@ -63,6 +65,16 @@ bool SdOK=false,FileOK=false;
 #define MVOPEN 		1
 #define MVCLOSE 	0
 
+//Variables for water PID
+double Wsetpoint, Winput, Woutput;
+//Specify the links and initial tuning parameters
+PID WaterPID(&Winput, &Woutput, &Wsetpoint, 0, 0, 0, DIRECT);
+
+//Variables for solar PID
+double Ssetpoint, Sinput, Pwm0;
+//Specify the links and initial tuning parameters
+PID SolarPID(&Sinput, &Pwm0, &Ssetpoint, 0, 0, 0, REVERSE);
+
 //outputs
 #define PIN_PWM0	10	//solar pump speed signal
 #define PIN_R0		36	//solar pump
@@ -83,11 +95,10 @@ byte RF=0;
 #define BIT_R2	4
 #define BIT_R3	8
 #define BIT_R4	16
-char Pwm0=0;
 
 
 #define NUM_S0	3
-#define NUM_S1	5
+#define NUM_S1	6
 #define NUM_S2	4
 #define NUM_S3	4
 
@@ -105,7 +116,7 @@ char S_0[NUM_S0],S_1[NUM_S1],S_2[NUM_S2],S_3[NUM_S3];
 //array with the numbers of elements in each of the parameter arrays
 const char Sn[]={NUM_S0,NUM_S1,NUM_S2,NUM_S3};
 //same thing for the Cx params
-char C_0[NUM_C0],C_1[NUM_C1];
+char C_0[NUM_C0],C_1[NUM_C1],C_2[NUM_C2];
 const char Cn[]={NUM_C0,NUM_C1};
 //same thing for the Px params
 char P_0[NUM_P0],P_1[NUM_P1];
@@ -126,9 +137,10 @@ const char *St0[]={
 const char *St1[]={	
 	"PWM max %",
 	"PWM min %",
-	"Increment %",
-	"Periode cycle s",
-	"Ecart T0-T1 voulu"}; 
+	"Ecart T0-T1 cible",
+	"Kp x10",
+	"Ki x10",
+	"Kd x10"}; 
 const char *St2[]={	
 	"Demarrage periodique",
 	"T mini capteur",
@@ -149,17 +161,17 @@ const char *Ct0[]={
 	"H nuit"};
 const char *Ct1[]={	
 	"Tps mvmt complet s",
-	"Tps manoeuvre max s",
+	"Periode cycle s",
 	"Tps manoeuvre min s",
-	"Kp",
-	"Ki",
-	"Kd"};
+	"Kp x10",
+	"Ki x10",
+	"Kd x10"};
 const char *Ct2[]={
 	"Pente",
-	"T a Text=0",
-	"xxx",
-	"xxxx"};
-	
+	"Text non chauffage",
+	"Teau a Text non ch.",
+	"Coef corr. Tint x10",
+	"Teau max"};	
 const char **Ct[]={Ct0,Ct1,Ct2};
 
 const char *Pt0[]={
@@ -211,6 +223,12 @@ void setup(void)
   //lcd.clear();
   //lcd.print(F("Initialisation..."));
   
+  loadParams();//get all the parameters from eeprom
+  
+  SetPIDs();
+  SolarPID.SetMode(MANUAL);
+  WaterPID.SetMode(MANUAL);
+  
   RTC.start();
   
   pinMode(PIN_A,INPUT_PULLUP);  //encoder input
@@ -226,15 +244,15 @@ void setup(void)
   pinMode(PIN_R4,OUTPUT);
   pinMode(PIN_PWM0,OUTPUT);
   outputsWrite();
-  
-  
-  
-  loadParams();//get all the parameters from eeprom
+    
+
   
   menu.next(menu_start); 
   gettemp.next(gettemp_start);
   datalog.next(datalog_start);
   solar.next(solar_off);
+  boiler.next(boiler_wait);
+  heat.next(heat_close);
 }
 
 void loop(void) 
@@ -246,6 +264,9 @@ void loop(void)
 	encoderRead();
 	gettemp.run();
 	
+	SolarPID.Compute();
+	WaterPID.Compute();
+	
 	solar.run();
 	heat.run();
 	boiler.run();
@@ -255,6 +276,17 @@ void loop(void)
 	//R |= RF; //
 	outputsWrite();
 }
+
+void SetPIDs()
+{
+  SolarPID.SetOutputLimits( S[1][1], S[1][0] );
+  SolarPID.SetTunings( S[1][3]/10, S[1][4]/10, S[1][5]/10 );
+  //SolarPID.SetSampleTime(1000)
+  
+  WaterPID.SetOutputLimits( -C[1][1]*1E3, C[1][1]*1E3 );
+  WaterPID.SetTunings(  C[1][3]/10, C[1][4]/10, C[1][5]/10 );
+  WaterPID.SetSampleTime( C[1][1]*1E3 ); 
+ }
 
 //from http://jeelabs.org/2011/05/22/atmega-memory-use/
 int freeRam () {
@@ -312,6 +344,8 @@ void loadSensorsAddresses()
 
 void saveParams()
 {
+	SetPIDs(); //because we may have changed some parameters related to PIDs
+	
 	int address = EEPROM_PARAM_ADR;
 	EEPROM.put(address,S_0);
 	address += sizeof(S_0);
@@ -1788,13 +1822,72 @@ void heat_close()
 {
 	moveMixValve(MVCLOSE);
 	
-	if(heat.elapsed(C[1][0]))
-		heat.next(heat_off);
+	if( heat.elapsed(C[1][0]) || Hon )
+		heat.next(heat_wait);
 }
 
-void heat_off()
+void heat_wait()
 {
+	if(Hon)
+		heat.next(heat_run);
 }
+
+void heat_run()
+{
+	static unsigned long windowStartTime;
+	
+	if(heat.isFirstRun())
+	{
+		windowStartTime=millis();
+		WaterPID.SetMode(AUTOMATIC);
+	}
+	
+	setOutput(BIT_R1,1); //pump on
+	
+	Winput=T[4];
+	Wsetpoint= 50;
+	WaterPID.Compute();
+	int windowOn = abs(Woutput);
+	bool direction = (Woutput>0);
+	if (windowOn<(C[1][2]*1E3))
+		windowOn=0;//if movement is shorter than min mvmt time, just don't move
+	
+	if (millis() - windowStartTime > (C[1][1]*1E3))
+		windowStartTime += (C[1][1]*1E3); //time to shift the Relay Window
+	if (windowOn < millis() - windowStartTime) 
+		moveMixValve(direction);
+	
+	if(!Hon) 
+	{
+		heat.next(heat_close);
+		WaterPID.SetMode(MANUAL);
+	}
+	if(Hon && (T[3]<C[3][1]))
+	{
+		heat.next(heat_err_close);
+		WaterPID.SetMode(MANUAL);
+	}	
+}
+
+void heat_err_close()
+{
+	/*if(heat.isFirstRun())
+	{
+		//message tank empty
+	}*/
+	
+	moveMixValve(MVCLOSE);
+	
+	if( heat.elapsed(C[1][0]) )
+		heat.next(heat_err_wait);
+}
+
+void heat_err_wait()
+{
+	if( !Hon || (T[3]>C[3][1]) )
+		heat.next(heat_wait);
+}
+
 
 ////////////////////////boiler state machine////////////////////////////////////
 void boiler_wait()

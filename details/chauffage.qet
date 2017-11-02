@@ -1,516 +1,267 @@
-<project version="0.5" folioSheetQuantity="0" title="">
+<project folioSheetQuantity="0" title="" version="0.5">
     <properties/>
     <newdiagrams>
-        <border rowsize="80" cols="17" colsize="60" displaycols="true" rows="8" displayrows="true"/>
-        <inset filename="" folio="%id/%total" date="null" title="" displayAt="bottom" author=""/>
-        <conductors horizrotatetext="0" type="multi" numsize="7" displaytext="1" num="_" function="" vertirotatetext="270" tension-protocol="" onetextperfolio="0"/>
+        <border rows="8" displayrows="true" colsize="60" cols="17" rowsize="80" displaycols="true"/>
+        <inset filename="" folio="%id/%total" title="" date="null" displayAt="bottom" author=""/>
+        <conductors vertirotatetext="270" function="" num="_" onetextperfolio="0" displaytext="1" type="multi" horizrotatetext="0" tension-protocol="" numsize="7"/>
         <report label="%f-%l%c"/>
         <xrefs>
-            <xref type="coil" delayprefix="" powerprefix="" snapto="label" displayhas="cross" showpowerctc="false" switchprefix=""/>
-            <xref type="commutator" delayprefix="" powerprefix="" snapto="label" displayhas="cross" showpowerctc="false" switchprefix=""/>
-            <xref type="protection" delayprefix="" powerprefix="" snapto="label" displayhas="cross" showpowerctc="false" switchprefix=""/>
+            <xref showpowerctc="false" switchprefix="" type="commutator" delayprefix="" snapto="label" powerprefix="" displayhas="cross"/>
+            <xref showpowerctc="false" switchprefix="" type="protection" delayprefix="" snapto="label" powerprefix="" displayhas="cross"/>
+            <xref showpowerctc="false" switchprefix="" type="coil" delayprefix="" snapto="label" powerprefix="" displayhas="cross"/>
         </xrefs>
         <conductors_autonums/>
     </newdiagrams>
-    <diagram rowsize="80" version="0.5" filename="" folio="%id/%total" date="null" cols="17" title="" colsize="60" displaycols="true" rows="16" displayAt="bottom" displayrows="true" author="" height="1300" order="1">
-        <defaultconductor horizrotatetext="0" type="single" numsize="7" displaytext="1" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" ground="false" neutral="false"/>
+    <diagram rows="16" filename="" displayrows="true" folio="%id/%total" colsize="60" title="" date="null" displayAt="bottom" cols="17" rowsize="80" version="0.5" displaycols="true" author="" height="1300" order="1">
+        <defaultconductor ground="false" vertirotatetext="270" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" numsize="7"/>
         <elements>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" x="520" y="550" orientation="0" uuid="{825b78c0-7e2f-49f1-8a60-93681c936d45}">
+            <element uuid="{4354422b-b4eb-42b0-b6fe-e0fb12c607ee}" x="440" y="570" type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" orientation="0">
                 <terminals>
-                    <terminal x="6" y="0" name="_" orientation="3" id="0" number="_" nameHidden="0"/>
+                    <terminal x="0" y="1" id="0" number="_" orientation="2" name="_" nameHidden="0"/>
+                    <terminal x="0" y="-1" id="1" number="_" orientation="0" name="_" nameHidden="0"/>
+                    <terminal x="-8" y="0" id="2" number="_" orientation="3" name="_" nameHidden="0"/>
                 </terminals>
                 <inputs>
-                    <input text="R0on PWM=S1.1" x="8" y="2" userx="10" usery="0"/>
+                    <input x="15" y="2" text="!Hon || T3>C3.1" userx="20" usery="0"/>
                 </inputs>
                 <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
+                    <elementInformation show="1" name="label"></elementInformation>
+                    <elementInformation show="1" name="comment"></elementInformation>
                 </elementInformations>
             </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" x="640" y="750" orientation="0" uuid="{ac16d630-3b82-43be-883a-e59991a54d94}">
+            <element uuid="{7aa2f70d-4d3c-4826-aa14-7217ac90fb75}" x="440" y="190" type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" orientation="0">
                 <terminals>
-                    <terminal x="6" y="0" name="_" orientation="3" id="1" number="_" nameHidden="0"/>
+                    <terminal x="0" y="1" id="3" number="_" orientation="2" name="_" nameHidden="0"/>
+                    <terminal x="0" y="-1" id="4" number="_" orientation="0" name="_" nameHidden="0"/>
+                    <terminal x="-8" y="0" id="5" number="_" orientation="3" name="_" nameHidden="0"/>
                 </terminals>
                 <inputs>
-                    <input text="PWM>S1.0 ? PWM=S1.0" x="8" y="2" userx="10" usery="0"/>
+                    <input x="15" y="2" text="heat.elapsed(C[1][0]) || Hon" userx="20" usery="0"/>
                 </inputs>
                 <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
+                    <elementInformation show="1" name="label"></elementInformation>
+                    <elementInformation show="1" name="comment"></elementInformation>
                 </elementInformations>
             </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" x="360" y="750" orientation="0" uuid="{0d1c27f9-943f-4ebd-ae1c-9036ae77ce58}">
+            <element uuid="{5db45c2c-699c-4875-a187-c1ffee8dafcf}" x="500" y="140" type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" orientation="0">
                 <terminals>
-                    <terminal x="6" y="0" name="_" orientation="3" id="2" number="_" nameHidden="0"/>
+                    <terminal x="6" y="0" id="6" number="_" orientation="3" name="_" nameHidden="0"/>
                 </terminals>
                 <inputs>
-                    <input text="PWM&lt;S1.1 ? PWM=S1.1" x="8" y="2" userx="10" usery="0"/>
+                    <input x="8" y="2" text="R3on" userx="10" usery="0"/>
                 </inputs>
                 <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
+                    <elementInformation show="1" name="label"></elementInformation>
+                    <elementInformation show="1" name="comment"></elementInformation>
                 </elementInformations>
             </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/etape.elmt" x="600" y="750" orientation="0" uuid="{f395e2cc-9ad3-4c44-98c2-7001ef951458}">
+            <element uuid="{7c0e2d50-ae42-4929-80d3-1b8800d133df}" x="440" y="150" type="embed://import/20_logic/20_grafcet/11_grafcet/etape.elmt" orientation="0">
                 <terminals>
-                    <terminal x="0" y="-21" name="_" orientation="0" id="3" number="_" nameHidden="0"/>
-                    <terminal x="0" y="21" name="_" orientation="2" id="4" number="_" nameHidden="0"/>
-                    <terminal x="36" y="-10" name="_" orientation="1" id="5" number="_" nameHidden="0"/>
+                    <terminal x="0" y="-21" id="7" number="_" orientation="0" name="_" nameHidden="0"/>
+                    <terminal x="0" y="21" id="8" number="_" orientation="2" name="_" nameHidden="0"/>
+                    <terminal x="36" y="-10" id="9" number="_" orientation="1" name="_" nameHidden="0"/>
                 </terminals>
                 <inputs>
-                    <input text="" x="-30" y="14"/>
-                    <input text="solarRun_inc" x="-20" y="0" userx="-60" usery="0"/>
+                    <input x="-30" y="14" text=""/>
+                    <input x="-20" y="0" text="heat_close" userx="-40" usery="0"/>
                 </inputs>
                 <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
+                    <elementInformation show="1" name="label"></elementInformation>
+                    <elementInformation show="1" name="comment"></elementInformation>
                 </elementInformations>
             </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" x="640" y="740" orientation="0" uuid="{cf26e78a-8716-452a-886f-e98a9d1ce594}">
+            <element uuid="{ce8a5501-80cb-4b71-929b-77a724c4e5b2}" x="440" y="340" type="embed://import/20_logic/20_grafcet/11_grafcet/etape.elmt" orientation="0">
                 <terminals>
-                    <terminal x="6" y="0" name="_" orientation="3" id="6" number="_" nameHidden="0"/>
+                    <terminal x="0" y="-21" id="10" number="_" orientation="0" name="_" nameHidden="0"/>
+                    <terminal x="0" y="21" id="11" number="_" orientation="2" name="_" nameHidden="0"/>
+                    <terminal x="36" y="-10" id="12" number="_" orientation="1" name="_" nameHidden="0"/>
                 </terminals>
                 <inputs>
-                    <input text="R0on PWM+=S1.2" x="8" y="2" userx="10" usery="0"/>
+                    <input x="-30" y="14" text=""/>
+                    <input x="-20" y="0" text="heat_run" userx="-40" usery="0"/>
                 </inputs>
             </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/etape.elmt" x="320" y="750" orientation="0" uuid="{b902eb5c-9a52-4a11-88f5-71e697d3f882}">
+            <element uuid="{1c90e705-3c86-4dcb-b328-fd2c2549ce86}" x="440" y="290" type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" orientation="0">
                 <terminals>
-                    <terminal x="0" y="-21" name="_" orientation="0" id="7" number="_" nameHidden="0"/>
-                    <terminal x="0" y="21" name="_" orientation="2" id="8" number="_" nameHidden="0"/>
-                    <terminal x="36" y="-10" name="_" orientation="1" id="9" number="_" nameHidden="0"/>
+                    <terminal x="0" y="1" id="13" number="_" orientation="2" name="_" nameHidden="0"/>
+                    <terminal x="0" y="-1" id="14" number="_" orientation="0" name="_" nameHidden="0"/>
+                    <terminal x="-8" y="0" id="15" number="_" orientation="3" name="_" nameHidden="0"/>
                 </terminals>
                 <inputs>
-                    <input text="" x="-30" y="14"/>
-                    <input text="solarRun_dec" x="-20" y="0" userx="-60" usery="0"/>
+                    <input x="15" y="2" text="Hon" userx="20" usery="0"/>
+                </inputs>
+            </element>
+            <element uuid="{091b8647-d41f-4565-864d-832a54b66aea}" x="440" y="240" type="embed://import/20_logic/20_grafcet/11_grafcet/etape.elmt" orientation="0">
+                <terminals>
+                    <terminal x="0" y="-21" id="16" number="_" orientation="0" name="_" nameHidden="0"/>
+                    <terminal x="0" y="21" id="17" number="_" orientation="2" name="_" nameHidden="0"/>
+                    <terminal x="36" y="-10" id="18" number="_" orientation="1" name="_" nameHidden="0"/>
+                </terminals>
+                <inputs>
+                    <input x="-30" y="14" text=""/>
+                    <input x="-20" y="0" text="heat_wait" userx="-40" usery="0"/>
                 </inputs>
                 <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
+                    <elementInformation show="1" name="label"></elementInformation>
+                    <elementInformation show="1" name="comment"></elementInformation>
                 </elementInformations>
             </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" x="360" y="740" orientation="0" uuid="{8c620144-4a10-454c-b015-d7d74b8bfe86}">
+            <element uuid="{97b69f04-920d-4338-a730-bb9a3734616e}" x="500" y="230" type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" orientation="0">
                 <terminals>
-                    <terminal x="6" y="0" name="_" orientation="3" id="10" number="_" nameHidden="0"/>
+                    <terminal x="6" y="0" id="19" number="_" orientation="3" name="_" nameHidden="0"/>
                 </terminals>
                 <inputs>
-                    <input text="R0on PWM-=S1.2" x="8" y="2" userx="10" usery="0"/>
+                    <input x="8" y="2" text="" userx="10" usery="0"/>
+                </inputs>
+            </element>
+            <element uuid="{4d819329-6d2b-4e2f-a6b0-be285832836d}" x="500" y="330" type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" orientation="0">
+                <terminals>
+                    <terminal x="6" y="0" id="20" number="_" orientation="3" name="_" nameHidden="0"/>
+                </terminals>
+                <inputs>
+                    <input x="8" y="2" text="R1on, R2R3pid" userx="10" usery="0"/>
                 </inputs>
                 <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
+                    <elementInformation show="1" name="label"></elementInformation>
+                    <elementInformation show="1" name="comment"></elementInformation>
                 </elementInformations>
             </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" x="320" y="710" orientation="0" uuid="{2a11f7c8-10fd-4b50-9c29-e5b9e8be234c}">
+            <element uuid="{6085af3b-1ea4-4803-a333-6be8cf28cbad}" x="440" y="460" type="embed://import/20_logic/20_grafcet/11_grafcet/etape.elmt" orientation="0">
                 <terminals>
-                    <terminal x="0" y="1" name="_" orientation="2" id="11" number="_" nameHidden="0"/>
-                    <terminal x="0" y="-1" name="_" orientation="0" id="12" number="_" nameHidden="0"/>
-                    <terminal x="-8" y="0" name="_" orientation="3" id="13" number="_" nameHidden="0"/>
+                    <terminal x="0" y="-21" id="21" number="_" orientation="0" name="_" nameHidden="0"/>
+                    <terminal x="0" y="21" id="22" number="_" orientation="2" name="_" nameHidden="0"/>
+                    <terminal x="36" y="-10" id="23" number="_" orientation="1" name="_" nameHidden="0"/>
                 </terminals>
                 <inputs>
-                    <input text="(T0-T1)&lt;S1.4" x="15" y="2"/>
+                    <input x="-30" y="14" text=""/>
+                    <input x="-20" y="0" text="heat_err_close" userx="-40" usery="0"/>
                 </inputs>
                 <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
+                    <elementInformation show="1" name="label"></elementInformation>
+                    <elementInformation show="1" name="comment"></elementInformation>
                 </elementInformations>
             </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" x="600" y="710" orientation="0" uuid="{ece94866-0389-4875-b2c7-10df04948f30}">
+            <element uuid="{eb67e2bf-417d-4393-8bde-a0b0042cfca7}" x="300" y="400" type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" orientation="0">
                 <terminals>
-                    <terminal x="0" y="1" name="_" orientation="2" id="14" number="_" nameHidden="0"/>
-                    <terminal x="0" y="-1" name="_" orientation="0" id="15" number="_" nameHidden="0"/>
-                    <terminal x="-8" y="0" name="_" orientation="3" id="16" number="_" nameHidden="0"/>
+                    <terminal x="0" y="1" id="24" number="_" orientation="2" name="_" nameHidden="0"/>
+                    <terminal x="0" y="-1" id="25" number="_" orientation="0" name="_" nameHidden="0"/>
+                    <terminal x="-8" y="0" id="26" number="_" orientation="3" name="_" nameHidden="0"/>
                 </terminals>
                 <inputs>
-                    <input text="(T0-T1)>S1.4" x="15" y="2"/>
+                    <input x="15" y="2" text="!Hon" userx="20" usery="0"/>
                 </inputs>
                 <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
+                    <elementInformation show="1" name="label"></elementInformation>
+                    <elementInformation show="1" name="comment"></elementInformation>
                 </elementInformations>
             </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" x="520" y="620" orientation="0" uuid="{3de15af7-4c35-4d08-9f76-f9e3dd7130fc}">
+            <element uuid="{0c25045a-e0ef-4dd3-985c-a3eb4d24ff2b}" x="440" y="400" type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" orientation="0">
                 <terminals>
-                    <terminal x="6" y="0" name="_" orientation="3" id="17" number="_" nameHidden="0"/>
+                    <terminal x="0" y="1" id="27" number="_" orientation="2" name="_" nameHidden="0"/>
+                    <terminal x="0" y="-1" id="28" number="_" orientation="0" name="_" nameHidden="0"/>
+                    <terminal x="-8" y="0" id="29" number="_" orientation="3" name="_" nameHidden="0"/>
                 </terminals>
                 <inputs>
-                    <input text="R0on PWM" x="8" y="2" userx="10" usery="0"/>
+                    <input x="15" y="2" text="Hon &amp;&amp; T3&lt;C3.1" userx="20" usery="0"/>
                 </inputs>
                 <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
+                    <elementInformation show="1" name="label"></elementInformation>
+                    <elementInformation show="1" name="comment"></elementInformation>
                 </elementInformations>
             </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/etape.elmt" x="460" y="630" orientation="0" uuid="{c81e3da1-e939-4ca2-b89d-9ee460b59c70}">
+            <element uuid="{69ccb7a4-b0e4-4a4d-85c1-60fe215fd821}" x="490" y="450" type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" orientation="0">
                 <terminals>
-                    <terminal x="0" y="-21" name="_" orientation="0" id="18" number="_" nameHidden="0"/>
-                    <terminal x="0" y="21" name="_" orientation="2" id="19" number="_" nameHidden="0"/>
-                    <terminal x="36" y="-10" name="_" orientation="1" id="20" number="_" nameHidden="0"/>
+                    <terminal x="6" y="0" id="30" number="_" orientation="3" name="_" nameHidden="0"/>
                 </terminals>
                 <inputs>
-                    <input text="" x="-30" y="14"/>
-                    <input text="solarRun_wait" x="-20" y="0" userx="-50" usery="0"/>
+                    <input x="8" y="2" text="R3on error(&quot;stock dechargé&quot;)" userx="10" usery="0"/>
                 </inputs>
                 <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
+                    <elementInformation show="1" name="label"></elementInformation>
+                    <elementInformation show="1" name="comment"></elementInformation>
                 </elementInformations>
             </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" x="560" y="260" orientation="0" uuid="{c5aa51cf-eb0d-4d64-bb97-ae7ca372f9cd}">
+            <element uuid="{3272ed06-96fc-4d3c-a9e9-33e8ffedf7a5}" x="440" y="540" type="embed://import/20_logic/20_grafcet/11_grafcet/etape.elmt" orientation="0">
                 <terminals>
-                    <terminal x="6" y="0" name="_" orientation="3" id="21" number="_" nameHidden="0"/>
+                    <terminal x="0" y="-21" id="31" number="_" orientation="0" name="_" nameHidden="0"/>
+                    <terminal x="0" y="21" id="32" number="_" orientation="2" name="_" nameHidden="0"/>
+                    <terminal x="36" y="-10" id="33" number="_" orientation="1" name="_" nameHidden="0"/>
                 </terminals>
                 <inputs>
-                    <input text="solarRun.next(solarRun_start)" x="8" y="2" userx="10" usery="0"/>
+                    <input x="-30" y="14" text=""/>
+                    <input x="-20" y="0" text="heat_err_wait" userx="-40" usery="0"/>
                 </inputs>
                 <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
+                    <elementInformation show="1" name="label"></elementInformation>
+                    <elementInformation show="1" name="comment"></elementInformation>
                 </elementInformations>
             </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/etape.elmt" x="460" y="560" orientation="0" uuid="{9997f843-fa07-4a92-91d6-3fa29c515b06}">
+            <element uuid="{4de92351-7aa2-477d-942b-f98ba1ba9c2d}" x="500" y="530" type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" orientation="0">
                 <terminals>
-                    <terminal x="0" y="-21" name="_" orientation="0" id="22" number="_" nameHidden="0"/>
-                    <terminal x="0" y="21" name="_" orientation="2" id="23" number="_" nameHidden="0"/>
-                    <terminal x="36" y="-10" name="_" orientation="1" id="24" number="_" nameHidden="0"/>
+                    <terminal x="6" y="0" id="34" number="_" orientation="3" name="_" nameHidden="0"/>
                 </terminals>
                 <inputs>
-                    <input text="" x="-30" y="14"/>
-                    <input text="solarRun_start" x="-20" y="0" userx="-50" usery="0"/>
+                    <input x="8" y="2" text="" userx="10" usery="0"/>
                 </inputs>
                 <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
+                    <elementInformation show="1" name="label"></elementInformation>
+                    <elementInformation show="1" name="comment"></elementInformation>
                 </elementInformations>
             </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" x="460" y="670" orientation="0" uuid="{147b0ba6-9dfd-48e7-b2b8-ab2d8227e66c}">
+            <element uuid="{5da14cbf-9ddf-480b-b296-b90beffadb7d}" x="440" y="500" type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" orientation="0">
                 <terminals>
-                    <terminal x="0" y="1" name="_" orientation="2" id="25" number="_" nameHidden="0"/>
-                    <terminal x="0" y="-1" name="_" orientation="0" id="26" number="_" nameHidden="0"/>
-                    <terminal x="-8" y="0" name="_" orientation="3" id="27" number="_" nameHidden="0"/>
+                    <terminal x="0" y="1" id="35" number="_" orientation="2" name="_" nameHidden="0"/>
+                    <terminal x="0" y="-1" id="36" number="_" orientation="0" name="_" nameHidden="0"/>
+                    <terminal x="-8" y="0" id="37" number="_" orientation="3" name="_" nameHidden="0"/>
                 </terminals>
                 <inputs>
-                    <input text="elapsed(S1.3*10*1000)" x="15" y="2"/>
+                    <input x="15" y="2" text="heat.elapsed(C[1][0])" userx="20" usery="0"/>
                 </inputs>
                 <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/etape.elmt" x="780" y="280" orientation="0" uuid="{d10506bd-5cb7-4719-9bd9-930b695c5818}">
-                <terminals>
-                    <terminal x="0" y="-21" name="_" orientation="0" id="28" number="_" nameHidden="0"/>
-                    <terminal x="0" y="21" name="_" orientation="2" id="29" number="_" nameHidden="0"/>
-                    <terminal x="36" y="-10" name="_" orientation="1" id="30" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="" x="-30" y="14"/>
-                    <input text="solar_try" x="-20" y="0" userx="-30" usery="0"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" x="780" y="230" orientation="0" uuid="{ad335644-fe1b-40ec-be0a-f544b2edc686}">
-                <terminals>
-                    <terminal x="0" y="1" name="_" orientation="2" id="31" number="_" nameHidden="0"/>
-                    <terminal x="0" y="-1" name="_" orientation="0" id="32" number="_" nameHidden="0"/>
-                    <terminal x="-8" y="0" name="_" orientation="3" id="33" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="S2.0&amp;&amp;elapsed(S2.3*10*1000)&amp;&amp;T0>S2.1" x="15" y="2" userx="10" usery="0"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" x="840" y="270" orientation="0" uuid="{6f35d7b1-cd1b-4fac-b510-4618b4ba94e5}">
-                <terminals>
-                    <terminal x="6" y="0" name="_" orientation="3" id="34" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="R0on PWM=S1.1" x="8" y="2" userx="10" usery="0"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" x="780" y="320" orientation="0" uuid="{cd2a6766-d744-45c2-9969-7111b2d2248a}">
-                <terminals>
-                    <terminal x="0" y="1" name="_" orientation="2" id="35" number="_" nameHidden="0"/>
-                    <terminal x="0" y="-1" name="_" orientation="0" id="36" number="_" nameHidden="0"/>
-                    <terminal x="-8" y="0" name="_" orientation="3" id="37" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="elapsed(S2.2*1000)" x="15" y="2"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" x="290" y="380" orientation="0" uuid="{69ccb7a4-b0e4-4a4d-85c1-60fe215fd821}">
-                <terminals>
-                    <terminal x="6" y="0" name="_" orientation="3" id="38" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="error(&quot;surchauffe solaire&quot;)" x="8" y="2" userx="10" usery="0"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" x="500" y="320" orientation="0" uuid="{0c25045a-e0ef-4dd3-985c-a3eb4d24ff2b}">
-                <terminals>
-                    <terminal x="0" y="1" name="_" orientation="2" id="39" number="_" nameHidden="0"/>
-                    <terminal x="0" y="-1" name="_" orientation="0" id="40" number="_" nameHidden="0"/>
-                    <terminal x="-8" y="0" name="_" orientation="3" id="41" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="T0&lt;T1+S0.2||T1>S0.0" x="15" y="2"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" x="240" y="440" orientation="0" uuid="{79a05353-bd58-44d0-b922-d0775a4b9cd4}">
-                <terminals>
-                    <terminal x="0" y="1" name="_" orientation="2" id="42" number="_" nameHidden="0"/>
-                    <terminal x="0" y="-1" name="_" orientation="0" id="43" number="_" nameHidden="0"/>
-                    <terminal x="-8" y="0" name="_" orientation="3" id="44" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="T1&lt;S3.3||T0&lt;(S3.1-S3.2)" x="15" y="2"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" x="110" y="330" orientation="0" uuid="{eb67e2bf-417d-4393-8bde-a0b0042cfca7}">
-                <terminals>
-                    <terminal x="0" y="1" name="_" orientation="2" id="45" number="_" nameHidden="0"/>
-                    <terminal x="0" y="-1" name="_" orientation="0" id="46" number="_" nameHidden="0"/>
-                    <terminal x="-8" y="0" name="_" orientation="3" id="47" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="T0&lt;(S3.1-S3.2)" x="15" y="2" userx="10" usery="0"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/etape.elmt" x="240" y="390" orientation="0" uuid="{6085af3b-1ea4-4803-a333-6be8cf28cbad}">
-                <terminals>
-                    <terminal x="0" y="-21" name="_" orientation="0" id="48" number="_" nameHidden="0"/>
-                    <terminal x="0" y="21" name="_" orientation="2" id="49" number="_" nameHidden="0"/>
-                    <terminal x="36" y="-10" name="_" orientation="1" id="50" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="" x="-30" y="14"/>
-                    <input text="solar_protection_err" x="-20" y="0" userx="-60" usery="0"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" x="560" y="270" orientation="0" uuid="{4d819329-6d2b-4e2f-a6b0-be285832836d}">
-                <terminals>
-                    <terminal x="6" y="0" name="_" orientation="3" id="51" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="solarRun.run()" x="8" y="2" userx="10" usery="0"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" x="240" y="330" orientation="0" uuid="{e9f7f852-695d-48b7-8931-e56f09eb0db8}">
-                <terminals>
-                    <terminal x="0" y="1" name="_" orientation="2" id="52" number="_" nameHidden="0"/>
-                    <terminal x="0" y="-1" name="_" orientation="0" id="53" number="_" nameHidden="0"/>
-                    <terminal x="-8" y="0" name="_" orientation="3" id="54" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="T1>S3.3" x="15" y="2"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" x="290" y="270" orientation="0" uuid="{1f7cf433-6c0d-44e6-b243-137773a44c9d}">
-                <terminals>
-                    <terminal x="6" y="0" name="_" orientation="3" id="55" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="R0 on   PWM=S1.0" x="8" y="2" userx="10" usery="0"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/etape.elmt" x="240" y="280" orientation="0" uuid="{bbba6d20-134d-40f1-afc9-d73ea592a4d5}">
-                <terminals>
-                    <terminal x="0" y="-21" name="_" orientation="0" id="56" number="_" nameHidden="0"/>
-                    <terminal x="0" y="21" name="_" orientation="2" id="57" number="_" nameHidden="0"/>
-                    <terminal x="36" y="-10" name="_" orientation="1" id="58" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="" x="-30" y="14"/>
-                    <input text="solar_protection" x="-20" y="0" userx="-60" usery="0"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" x="240" y="230" orientation="0" uuid="{45747797-222f-481e-8ee8-50897ef4ce2c}">
-                <terminals>
-                    <terminal x="0" y="1" name="_" orientation="2" id="59" number="_" nameHidden="0"/>
-                    <terminal x="0" y="-1" name="_" orientation="0" id="60" number="_" nameHidden="0"/>
-                    <terminal x="-8" y="0" name="_" orientation="3" id="61" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="S3.0&amp;&amp;T0>S3.1" x="15" y="2"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" x="560" y="150" orientation="0" uuid="{97b69f04-920d-4338-a730-bb9a3734616e}">
-                <terminals>
-                    <terminal x="6" y="0" name="_" orientation="3" id="62" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="R0on PWM=0" x="8" y="2" userx="10" usery="0"/>
-                </inputs>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/etape.elmt" x="500" y="160" orientation="0" uuid="{091b8647-d41f-4565-864d-832a54b66aea}">
-                <terminals>
-                    <terminal x="0" y="-21" name="_" orientation="0" id="63" number="_" nameHidden="0"/>
-                    <terminal x="0" y="21" name="_" orientation="2" id="64" number="_" nameHidden="0"/>
-                    <terminal x="36" y="-10" name="_" orientation="1" id="65" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="" x="-30" y="14"/>
-                    <input text="heater_wait" x="-20" y="0" userx="-40" usery="0"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" x="500" y="230" orientation="0" uuid="{1c90e705-3c86-4dcb-b328-fd2c2549ce86}">
-                <terminals>
-                    <terminal x="0" y="1" name="_" orientation="2" id="66" number="_" nameHidden="0"/>
-                    <terminal x="0" y="-1" name="_" orientation="0" id="67" number="_" nameHidden="0"/>
-                    <terminal x="-8" y="0" name="_" orientation="3" id="68" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="Hon &amp;&amp; T" x="15" y="2" userx="10" usery="0"/>
-                </inputs>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/etape.elmt" x="500" y="280" orientation="0" uuid="{ce8a5501-80cb-4b71-929b-77a724c4e5b2}">
-                <terminals>
-                    <terminal x="0" y="-21" name="_" orientation="0" id="69" number="_" nameHidden="0"/>
-                    <terminal x="0" y="21" name="_" orientation="2" id="70" number="_" nameHidden="0"/>
-                    <terminal x="36" y="-10" name="_" orientation="1" id="71" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="" x="-30" y="14"/>
-                    <input text="bbbbbb" x="-20" y="0" userx="-40" usery="0"/>
-                </inputs>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/etape.elmt" x="500" y="70" orientation="0" uuid="{7c0e2d50-ae42-4929-80d3-1b8800d133df}">
-                <terminals>
-                    <terminal x="0" y="-21" name="_" orientation="0" id="72" number="_" nameHidden="0"/>
-                    <terminal x="0" y="21" name="_" orientation="2" id="73" number="_" nameHidden="0"/>
-                    <terminal x="36" y="-10" name="_" orientation="1" id="74" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="" x="-30" y="14"/>
-                    <input text="heater_close" x="-20" y="0" userx="-50" usery="0"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/11_actions/action.elmt" x="560" y="60" orientation="0" uuid="{5db45c2c-699c-4875-a187-c1ffee8dafcf}">
-                <terminals>
-                    <terminal x="6" y="0" name="_" orientation="3" id="75" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="R2off R3on R4off" x="8" y="2" userx="10" usery="0"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
-                </elementInformations>
-            </element>
-            <element type="embed://import/20_logic/20_grafcet/11_grafcet/transition.elmt" x="500" y="110" orientation="0" uuid="{7aa2f70d-4d3c-4826-aa14-7217ac90fb75}">
-                <terminals>
-                    <terminal x="0" y="1" name="_" orientation="2" id="76" number="_" nameHidden="0"/>
-                    <terminal x="0" y="-1" name="_" orientation="0" id="77" number="_" nameHidden="0"/>
-                    <terminal x="-8" y="0" name="_" orientation="3" id="78" number="_" nameHidden="0"/>
-                </terminals>
-                <inputs>
-                    <input text="heater.elapsed(C[1][0])" x="15" y="2" userx="10" usery="0"/>
-                </inputs>
-                <elementInformations>
-                    <elementInformation name="label" show="1"></elementInformation>
-                    <elementInformation name="comment" show="1"></elementInformation>
+                    <elementInformation show="1" name="label"></elementInformation>
+                    <elementInformation show="1" name="comment"></elementInformation>
                 </elementInformations>
             </element>
         </elements>
         <conductors>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="0" y="350" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="0" terminal2="24" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="0" y="0" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="8" terminal2="18" ground="false" neutral="false">
+            <conductor ground="false" vertirotatetext="270" x="-60" y="80" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="0" terminal2="16" numsize="7">
                 <segment orientation="vertical" length="9"/>
-                <segment orientation="horizontal" length="140"/>
-                <segment orientation="vertical" length="36"/>
-                <segment orientation="horizontal" length="-220"/>
-                <segment orientation="vertical" length="-224"/>
-                <segment orientation="horizontal" length="220"/>
+                <segment orientation="vertical" length="6"/>
+                <segment orientation="horizontal" length="300"/>
+                <segment orientation="vertical" length="-384"/>
+                <segment orientation="horizontal" length="-300"/>
                 <segment orientation="vertical" length="9"/>
             </conductor>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="0" y="0" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="8" terminal2="4" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="20" y="0" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="14" terminal2="3" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="-30" y="0" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="11" terminal2="7" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="140" y="540" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="6" terminal2="5" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="-140" y="550" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="10" terminal2="9" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="0" y="0" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="25" terminal2="15" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="0" y="0" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="12" terminal2="25" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="0" y="0" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="19" terminal2="26" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="0" y="0" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="18" terminal2="23" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="0" y="420" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="17" terminal2="20" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="320" y="110" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="31" terminal2="28" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="320" y="70" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="34" terminal2="30" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="320" y="70" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="36" terminal2="29" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="40" y="70" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="38" terminal2="50" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="40" y="70" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="40" terminal2="70" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="40" y="70" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="43" terminal2="49" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="40" y="70" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="51" terminal2="71" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="120" y="70" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="53" terminal2="57" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="40" y="70" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="55" terminal2="58" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="-220" y="110" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="59" terminal2="56" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="40" y="70" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="62" terminal2="65" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="40" y="70" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="64" terminal2="67" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="40" y="110" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="66" terminal2="69" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="40" y="-20" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="75" terminal2="74" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="0" y="0" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="76" terminal2="63" ground="false" neutral="false"/>
-            <conductor horizrotatetext="0" type="single" numsize="7" displaytext="1" x="0" y="0" num="" function="" vertirotatetext="270" phase="0" tension-protocol="" onetextperfolio="0" terminal1="77" terminal2="73" ground="false" neutral="false"/>
+            <conductor ground="false" vertirotatetext="270" x="-60" y="80" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="27" terminal2="21" numsize="7"/>
+            <conductor ground="false" vertirotatetext="270" x="-60" y="80" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="25" terminal2="11" numsize="7">
+                <segment orientation="vertical" length="-9"/>
+                <segment orientation="vertical" length="-6"/>
+                <segment orientation="horizontal" length="140"/>
+                <segment orientation="vertical" length="-6"/>
+                <segment orientation="vertical" length="-9"/>
+            </conductor>
+            <conductor ground="false" vertirotatetext="270" x="-60" y="80" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="4" terminal2="8" numsize="7"/>
+            <conductor ground="false" vertirotatetext="270" x="-60" y="80" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="3" terminal2="16" numsize="7"/>
+            <conductor ground="false" vertirotatetext="270" x="-20" y="60" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="6" terminal2="9" numsize="7"/>
+            <conductor ground="false" vertirotatetext="270" x="-20" y="170" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="13" terminal2="10" numsize="7"/>
+            <conductor ground="false" vertirotatetext="270" x="-20" y="150" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="17" terminal2="14" numsize="7"/>
+            <conductor ground="false" vertirotatetext="270" x="-20" y="150" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="19" terminal2="18" numsize="7"/>
+            <conductor ground="false" vertirotatetext="270" x="-20" y="130" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="20" terminal2="12" numsize="7"/>
+            <conductor ground="false" vertirotatetext="270" x="-20" y="150" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="28" terminal2="11" numsize="7"/>
+            <conductor ground="false" vertirotatetext="270" x="240" y="140" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="30" terminal2="23" numsize="7"/>
+            <conductor ground="false" vertirotatetext="270" x="-60" y="80" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="24" terminal2="7" numsize="7">
+                <segment orientation="vertical" length="9"/>
+                <segment orientation="vertical" length="16"/>
+                <segment orientation="horizontal" length="-40"/>
+                <segment orientation="vertical" length="-320"/>
+                <segment orientation="horizontal" length="180"/>
+                <segment orientation="vertical" length="6"/>
+                <segment orientation="vertical" length="9"/>
+            </conductor>
+            <conductor ground="false" vertirotatetext="270" x="-20" y="440" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="34" terminal2="33" numsize="7"/>
+            <conductor ground="false" vertirotatetext="270" x="-60" y="80" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="32" terminal2="1" numsize="7"/>
+            <conductor ground="false" vertirotatetext="270" x="-60" y="80" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="35" terminal2="31" numsize="7"/>
+            <conductor ground="false" vertirotatetext="270" x="-60" y="80" function="" num="" onetextperfolio="0" displaytext="1" type="single" horizrotatetext="0" tension-protocol="" neutral="false" phase="0" terminal1="36" terminal2="22" numsize="7"/>
         </conductors>
     </diagram>
     <collection>
@@ -587,7 +338,7 @@
                                 <name lang="fr">Actions</name>
                             </names>
                             <element name="action.elmt">
-                                <definition width="140" version="0.5" type="element" orientation="dyyy" link_type="simple" hotspot_x="4" height="20" hotspot_y="10">
+                                <definition width="140" type="element" link_type="simple" hotspot_x="4" hotspot_y="10" version="0.5" orientation="dyyy" height="20">
                                     <uuid uuid="{d9f5f4cb-506a-4ce6-8187-c9d065cc91e6}"/>
                                     <names>
                                         <name lang="de">Aktion</name>
@@ -605,7 +356,7 @@
                                     <informations>Author: The QElectroTech team
 License: see http://qelectrotech.org/wiki/doc/elements_license</informations>
                                     <description>
-                                        <input text="action" tagg="label" x="8" y="2" size="8"/>
+                                        <input x="8" y="2" text="action" tagg="label" size="8"/>
                                         <rect width="125" x="7" y="-5" antialias="false" height="10" style="line-style:normal;line-weight:normal;filling:none;color:black"/>
                                         <terminal x="2" y="0" orientation="w"/>
                                     </description>
@@ -613,7 +364,7 @@ License: see http://qelectrotech.org/wiki/doc/elements_license</informations>
                             </element>
                         </category>
                         <element name="transition.elmt">
-                            <definition width="40" version="0.5" type="element" orientation="dyyy" link_type="simple" hotspot_x="20" height="20" hotspot_y="9">
+                            <definition width="40" type="element" link_type="simple" hotspot_x="20" hotspot_y="9" version="0.5" orientation="dyyy" height="20">
                                 <uuid uuid="{bc3fe91d-1989-4af2-89c5-09399a1d9582}"/>
                                 <names>
                                     <name lang="de">Übergang</name>
@@ -631,7 +382,7 @@ License: see http://qelectrotech.org/wiki/doc/elements_license</informations>
                                 <informations>Author: The QElectroTech team
 License: see http://qelectrotech.org/wiki/doc/elements_license</informations>
                                 <description>
-                                    <input text="T 00" tagg="label" x="15" y="2" size="8" rotate="true"/>
+                                    <input x="15" y="2" text="T 00" tagg="label" size="8" rotate="true"/>
                                     <rect width="26" x="-13" y="-2" antialias="false" height="4" style="line-style:normal;line-weight:thin;filling:black;color:black"/>
                                     <terminal x="0" y="5" orientation="s"/>
                                     <terminal x="0" y="-5" orientation="n"/>
@@ -640,7 +391,7 @@ License: see http://qelectrotech.org/wiki/doc/elements_license</informations>
                             </definition>
                         </element>
                         <element name="etape.elmt">
-                            <definition width="90" version="0.5" type="element" orientation="dyyy" link_type="simple" hotspot_x="41" height="60" hotspot_y="29">
+                            <definition width="90" type="element" link_type="simple" hotspot_x="41" hotspot_y="29" version="0.5" orientation="dyyy" height="60">
                                 <uuid uuid="{c6dd6cdf-8997-4e52-ab08-c3ac1ab2ac51}"/>
                                 <names>
                                     <name lang="de">Schritt</name>
@@ -658,8 +409,8 @@ License: see http://qelectrotech.org/wiki/doc/elements_license</informations>
                                 <informations>Author: The QElectroTech team
 License: see http://qelectrotech.org/wiki/doc/elements_license</informations>
                                 <description>
-                                    <input text="" tagg="none" x="-30" y="14" size="6" rotate="true"/>
-                                    <input text="E 00" tagg="label" x="-20" y="0" size="10" rotate="true"/>
+                                    <input x="-30" y="14" text="" tagg="none" size="6" rotate="true"/>
+                                    <input x="-20" y="0" text="E 00" tagg="label" size="10" rotate="true"/>
                                     <rect width="70" x="-35" y="-20" antialias="false" height="40" style="line-style:normal;line-weight:normal;filling:none;color:black"/>
                                     <terminal x="0" y="-25" orientation="n"/>
                                     <terminal x="0" y="25" orientation="s"/>
