@@ -1822,7 +1822,7 @@ void heat_close()
 {
 	moveMixValve(MVCLOSE);
 	
-	if( heat.elapsed(C[1][0]) || Hon )
+	if( heat.elapsed(C[1][0]*1E3) || Hon )
 		heat.next(heat_wait);
 }
 
@@ -1878,7 +1878,7 @@ void heat_err_close()
 	
 	moveMixValve(MVCLOSE);
 	
-	if( heat.elapsed(C[1][0]) )
+	if( heat.elapsed(C[1][0]*1E3) )
 		heat.next(heat_err_wait);
 }
 
