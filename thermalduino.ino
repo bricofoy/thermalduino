@@ -31,6 +31,7 @@ float T[SENSOR_NBR];
 //float Offset[SENSOR_NBR];
 bool TForce[SENSOR_NBR];
 bool Hon;
+int TinSet;
  
 #define TEMPERATURE_RESOLUTION 9 //0,5°C sensor acccuracy.
 
@@ -105,6 +106,7 @@ byte RF=0;
 #define NUM_C0	5
 #define NUM_C1	6
 #define NUM_C2	4
+#define NUM_C3  4
 
 #define NUM_P0	4
 #define NUM_P1	3
@@ -116,8 +118,8 @@ char S_0[NUM_S0],S_1[NUM_S1],S_2[NUM_S2],S_3[NUM_S3];
 //array with the numbers of elements in each of the parameter arrays
 const char Sn[]={NUM_S0,NUM_S1,NUM_S2,NUM_S3};
 //same thing for the Cx params
-char C_0[NUM_C0],C_1[NUM_C1],C_2[NUM_C2];
-const char Cn[]={NUM_C0,NUM_C1};
+char C_0[NUM_C0],C_1[NUM_C1],C_2[NUM_C2],C_3[NUM_C3];
+const char Cn[]={NUM_C0,NUM_C1,NUM_C2,NUM_C3};
 //same thing for the Px params
 char P_0[NUM_P0],P_1[NUM_P1];
 const char Pn[]={NUM_P0,NUM_P1};
@@ -126,7 +128,7 @@ char B_0[NUM_B0];
 const char Bn[]={NUM_B0};
 //pointer to the array of arrays storing the parameters
 char *S[]={S_0,S_1,S_2,S_3};
-char *C[]={C_0,C_1,C_2};
+char *C[]={C_0,C_1,C_2,C_3};
 char *P[]={P_0,P_1};
 char *B[]={B_0};
 //arrays of strings with details for each parameter
@@ -167,12 +169,17 @@ const char *Ct1[]={
 	"Ki x10",
 	"Kd x10"};
 const char *Ct2[]={
-	"Pente",
+	"Pente x10",
 	"Text non chauffage",
 	"Teau a Text non ch.",
 	"Coef corr. Tint x10",
 	"Teau max"};	
-const char **Ct[]={Ct0,Ct1,Ct2};
+const char *Ct3[]={
+	"Teau depart max",
+	"Tmin haut ballon",
+	"xxx",
+	"xxxx"};	
+const char **Ct[]={Ct0,Ct1,Ct2,Ct3};
 
 const char *Pt0[]={
 	"Periode enreg. x10s",
@@ -204,7 +211,6 @@ YASM menu;
 YASM gettemp;
 YASM datalog;
 YASM solar;
-YASM solarRun;
 YASM heat;
 YASM boiler;
 BTN btn;
@@ -264,8 +270,10 @@ void loop(void)
 	encoderRead();
 	gettemp.run();
 	
-	SolarPID.Compute();
-	WaterPID.Compute();
+	//SolarPID.Compute();
+	//WaterPID.Compute();
+	
+	Hon = C[0][0]; //is heat required ?
 	
 	solar.run();
 	heat.run();
@@ -279,14 +287,16 @@ void loop(void)
 
 void SetPIDs()
 {
-  SolarPID.SetOutputLimits( S[1][1], S[1][0] );
-  SolarPID.SetTunings( S[1][3]/10, S[1][4]/10, S[1][5]/10 );
-  //SolarPID.SetSampleTime(1000)
-  
-  WaterPID.SetOutputLimits( -C[1][1]*1E3, C[1][1]*1E3 );
-  WaterPID.SetTunings(  C[1][3]/10, C[1][4]/10, C[1][5]/10 );
-  WaterPID.SetSampleTime( C[1][1]*1E3 ); 
- }
+	//PID limits PWMmin and PWMmax
+	SolarPID.SetOutputLimits( S[1][1], S[1][0] );
+	SolarPID.SetTunings( S[1][3]/10, S[1][4]/10, S[1][5]/10 );
+	SolarPID.SetSampleTime(500);
+	
+	//PID limits between 0 and valve full move time
+	WaterPID.SetOutputLimits( 0, C[1][0]*1E3 );
+	WaterPID.SetTunings(  C[1][3]/10, C[1][4]/10, C[1][5]/10 );
+	WaterPID.SetSampleTime( C[1][0]*1E3 ); 
+}
 
 //from http://jeelabs.org/2011/05/22/atmega-memory-use/
 int freeRam () {
@@ -304,8 +314,8 @@ void setOutput(byte pin, bool state)
 
 void moveMixValve(bool direction)
 {
-	setOutput(PIN_R2, direction);
-	setOutput(PIN_R3, 1);
+	setOutput(BIT_R2, direction);
+	setOutput(BIT_R3, 1);
 }
 
 
@@ -361,7 +371,9 @@ void saveParams()
 	EEPROM.put(address,C_1);
 	address += sizeof(C_1);
 	EEPROM.put(address,C_2);
-	address += sizeof(C_2);
+	address += sizeof(C_2);	
+	EEPROM.put(address,C_3);
+	address += sizeof(C_3);
 	
 	EEPROM.put(address,P_0);
 	address += sizeof(P_0);
@@ -369,8 +381,18 @@ void saveParams()
 	address += sizeof(P_1);
 	
 	EEPROM.put(address,B_0);
-	//address += sizeof(B_0);	
+	address += sizeof(B_0);	
+	
+	EEPROM.put(address,TForce);
+	address += sizeof(TForce);
+	EEPROM.put(address,T);
+	address += sizeof(T);
+	EEPROM.put(address,RF);
+	address += sizeof(RF);
+	EEPROM.put(address,R);
+	//address += sizeof(R);	
 }
+
 void loadParams()
 {
 	int address = EEPROM_PARAM_ADR;
@@ -388,7 +410,9 @@ void loadParams()
 	EEPROM.get(address,C_1);
 	address += sizeof(C_1);	
 	EEPROM.get(address,C_2);
-	address += sizeof(C_2);
+	address += sizeof(C_2);	
+	EEPROM.get(address,C_3);
+	address += sizeof(C_3);
 	
 	EEPROM.get(address,P_0);
 	address += sizeof(P_0);
@@ -396,7 +420,16 @@ void loadParams()
 	address += sizeof(P_1);
 	
 	EEPROM.get(address,B_0);
-	//address += sizeof(B_0);
+	address += sizeof(B_0);
+	
+	EEPROM.get(address,TForce);
+	address += sizeof(TForce);
+	EEPROM.get(address,T);
+	address += sizeof(T);
+	EEPROM.get(address,RF);
+	address += sizeof(RF);
+	EEPROM.get(address,R);
+	//address += sizeof(R);		
 }
 
 void setSensorsResolution()
@@ -620,7 +653,7 @@ void menu_start()
 		lcd.setCursor(3,2); printT(7);
 		lcd.setCursor(13,2); printT(6);
 		
-		lcd.setCursor(7,3); C[0][0]?lcd<<F("ON "):lcd<<F("OFF");
+		lcd.setCursor(7,3); Hon?lcd<<F("ON "):lcd<<F("OFF");
 		
 		lcd.setCursor(12,3); lcd<<RTC.getS(DS1307_STR_TIME,0);
 		
@@ -906,6 +939,7 @@ void menu_forceR()
 	{
 		lcd.noBlink();
 		menu.next(menu_start);
+		saveParams();
 	}
 	
 	if(btn.state(BTN_CLICK))
@@ -956,7 +990,7 @@ void menu_forceT_edit()
 		case BTN_CLICK : { menu.next(menu_forceT); return; }
 		case BTN_LONGCLICK : { lcd.noBlink(); menu.next(menu_param2); return; }
 		case BTN_DOUBLECLICK : { TForce[Pos] &= 0; //unset the Force bit, back to AUTO
-			menu.next(menu_forceT);	return;	}
+								menu.next(menu_forceT);	return;	}
 	}
 
 	//if no button action just edit the value
@@ -981,7 +1015,8 @@ void menu_forceT()
 	switch (btn.state())
 	{
 		case BTN_CLICK : { menu.next(menu_forceT_edit); break; }
-		case BTN_LONGCLICK : { lcd.noBlink(); menu.next(menu_start); break; }
+		case BTN_LONGCLICK : {	lcd.noBlink(); menu.next(menu_start); 
+								saveParams(); break; }
 		//case BTN_DOUBLECLICK : break;
 	}
 
@@ -1213,13 +1248,13 @@ void menu_setC()
 		lcd.setCursor(1,1); lcd<< F("C0 base");
 		lcd.setCursor(1,2); lcd<< F("C1 vanne");
 		lcd.setCursor(1,3); lcd<< F("C2 loi d'eau");
-		//lcd.setCursor(11,1); lcd<<F("S4 protec");
+		lcd.setCursor(11,1); lcd<<F("C3 stock");
 		Pos=0;Page=0;
-		arrow(3);		
+		arrow(4);		
 	}
 
 
-	if (Counter!=0) arrow(3);
+	if (Counter!=0) arrow(4);
 	
 	if(btn.state(BTN_CLICK))
 	{
@@ -1745,14 +1780,21 @@ void solar_run()
 {
 	if(solar.isFirstRun())
 	{
-		solarRun.next(solarRun_start);
+		SolarPID.SetMode(AUTOMATIC);
 	//	Serial<<"solar_run"<<_endl;
 	}
-
-	solarRun.run();
+	
+	setOutput(BIT_R0, 1); //pump on
+	
+	Sinput = T[0]-T[1];
+	Ssetpoint = S[1][2];
+	SolarPID.Compute();
 	
 	if( T[0]<(T[1]+S[0][2]) || T[1]>S[0][0] )
+	{
 		solar.next(solar_wait);
+		SolarPID.SetMode(MANUAL);
+	}
 }
 
 void solar_try()
@@ -1767,67 +1809,19 @@ void solar_try()
 		solar.next(solar_wait);
 }
 
-////////////////////////solarRun state machine//////////////////////////////////
-void solarRun_start()
-{
-	setOutput(BIT_R0, 1);
-	Pwm0=S[1][1];
-		
-/* 	if(solarRun.isFirstRun())
-		Serial<<"solarRun_start "<<_endl; */
-	solarRun.next(solarRun_wait);
-}
-
-void solarRun_wait()
-{
-	setOutput(BIT_R0, 1);
-	
-/* 	if(solarRun.isFirstRun())
-		Serial<<"solarRun_wait "<<_endl; */
-	
-	if( solarRun.elapsed(S[1][3]*1000))
-	{
-		if( (T[0]-T[1])<S[1][4] )
-			solarRun.next(solarRun_dec);
-		
-		if( (T[0]-T[1])>S[1][4] )
-			solarRun.next(solarRun_inc);
-	}		
-}
-
-void solarRun_dec()
-{
-	setOutput(BIT_R0, 1);
-	Pwm0-=S[1][2];
-	
-	if( Pwm0<S[1][1] ) 
-		Pwm0=S[1][1];
-	
-	solarRun.next(solarRun_wait);
-}
-
-void solarRun_inc()
-{
-	setOutput(BIT_R0, 1);
-	Pwm0+=S[1][2];
-	
-	if( Pwm0>S[1][0] ) 
-		Pwm0=S[1][0];
-	
-	solarRun.next(solarRun_wait);
-}
-
 ////////////////////////heat state machine//////////////////////////////////////
 void heat_close()
 {
+	if(heat.isFirstRun()) Serial<<"heat_close"<<_endl;
 	moveMixValve(MVCLOSE);
 	
-	if( heat.elapsed(C[1][0]*1E3) || Hon )
+	if( heat.elapsed(C[1][0]*1E3) )
 		heat.next(heat_wait);
 }
 
 void heat_wait()
 {
+	if(heat.isFirstRun()) Serial<<"heat_wait"<<_endl;
 	if(Hon)
 		heat.next(heat_run);
 }
@@ -1835,27 +1829,91 @@ void heat_wait()
 void heat_run()
 {
 	static unsigned long windowStartTime;
-	
+	static int lastWoutput;
+	static int windowOn;
+	static bool direction;
+		
 	if(heat.isFirstRun())
 	{
+		Serial<<"heat_run"<<_endl;
 		windowStartTime=millis();
 		WaterPID.SetMode(AUTOMATIC);
+		lastWoutput=0; //valve must be fully closed prior to start 
 	}
-	
+	//Serial<<"heat_run"<<TinSet;
 	setOutput(BIT_R1,1); //pump on
 	
-	Winput=T[4];
-	Wsetpoint= 50;
-	WaterPID.Compute();
-	int windowOn = abs(Woutput);
-	bool direction = (Woutput>0);
-	if (windowOn<(C[1][2]*1E3))
-		windowOn=0;//if movement is shorter than min mvmt time, just don't move
+	//if(heat.periodic(30E3)) //check every 30s is often enough
+	{
+		if( DateTime.hour<C[0][3] || DateTime.hour>C[0][4] )
+			TinSet=C[0][2];  //night setpoint
+		else
+			TinSet=C[0][1];  //day setpoint
+	}
+
+	/*water setpoint calculation :
+	base formula is Twater= -slope*Tout + b
+	we know one point : (ToutNoHeat,TwaterNoHeat) so we can write :
+	TwaterNoHeat= -slope*ToutNoHeat +b
+	so b= TwaterNoHeat+slope*ToutNoHeat
+	so b= C2.2+C2.0/10*C2.1   (/10 because slope parameter is recorded in tenth)
+	so with Text=T6 we have : 
+	Wsetpoint= (-C[2][0]/10*T[6] + C[2][2]+C[2][0]/10*C[2][1] )
 	
-	if (millis() - windowStartTime > (C[1][1]*1E3))
-		windowStartTime += (C[1][1]*1E3); //time to shift the Relay Window
-	if (windowOn < millis() - windowStartTime) 
-		moveMixValve(direction);
+	then we use Tin and TinSet to make final adjustment :
+	we define coef*(TinSet - Tin) and with Tin = T7 we eventually have :
+	
+	Wsetpoint= Wsetpoint + C[2][3]*10*(TinSet- T[7])
+	
+	*/
+	
+	//main calculation :
+	Wsetpoint= (-C[2][0]/10*T[6] + C[2][2]+C[2][0]/10*C[2][1] );
+	//final adjustment taking Tin into account :
+	Wsetpoint= Wsetpoint + C[2][3]/10*(TinSet- T[7]);
+	
+	//check for upper limit
+	if(Wsetpoint>C[3][0]) Wsetpoint=C[3][0];
+	
+	Winput=T[4]; //get the actual water temp
+	
+	
+	if( WaterPID.Compute() ) 
+	{	//if PID computed a new output
+		//we calculate the corresponding amount of time to move the valve
+		windowOn=Woutput-lastWoutput;		
+		//we do this to get only the difference between two subsequent PID
+		//outputs, so we can adjust the valve position
+Serial<<"TinSet:"<<TinSet<<" Wsetpoint:"<<Wsetpoint<<" Winput:"<<Winput<<
+" Woutput:"<<Woutput<<"lastWoutput"<<lastWoutput<<" windowOn:"<<windowOn;
+		
+		lastWoutput=Woutput; //and then store the current value for next time
+					
+		//if movement is shorter than min mvmt time, just don't move to protect
+		//the valve motor. But doing so we need to keep track of the amount of 
+		//move we did not actually do, to keep accurate recording of valve position 
+		if (abs(windowOn)<(C[1][2]*1E3))
+		{
+			lastWoutput-=windowOn;
+			//and we just don't move
+			windowOn=0;
+		}
+		
+		direction = (windowOn>0); 	//get the movement direction
+		windowOn = abs(windowOn); 	//get the time to move the valve
+		Serial<<" "<<windowOn<<" "<<direction<<_endl;
+	}
+	
+	
+	if (millis() - windowStartTime > (C[1][0]*1E3))
+		windowStartTime += (C[1][0]*1E3); //time to shift the time Window
+	
+	//if(heat.periodic(3E3)) Serial<<" "<<millis()<<" "<<windowStartTime<<" "<<millis()-windowStartTime<<" "<<_endl;
+	
+	if (windowOn > millis() - windowStartTime) 
+	{ Serial<<"move "<<windowOn<<_endl;
+		moveMixValve(direction); //move the valve according to PID output
+	}
 	
 	if(!Hon) 
 	{
@@ -1875,7 +1933,7 @@ void heat_err_close()
 	{
 		//message tank empty
 	}*/
-	
+	if(heat.isFirstRun()) Serial<<"heat_err_close"<<_endl;
 	moveMixValve(MVCLOSE);
 	
 	if( heat.elapsed(C[1][0]*1E3) )
@@ -1884,6 +1942,7 @@ void heat_err_close()
 
 void heat_err_wait()
 {
+	if(heat.isFirstRun()) Serial<<"heat_err_wait"<<_endl;
 	if( !Hon || (T[3]>C[3][1]) )
 		heat.next(heat_wait);
 }
