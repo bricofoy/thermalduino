@@ -1840,7 +1840,7 @@ void heat_run()
 		WaterPID.SetMode(AUTOMATIC);
 		lastWoutput=0; //valve must be fully closed prior to start 
 	}
-	//Serial<<"heat_run"<<TinSet;
+
 	setOutput(BIT_R1,1); //pump on
 	
 	//if(heat.periodic(30E3)) //check every 30s is often enough
@@ -1877,15 +1877,13 @@ void heat_run()
 	
 	Winput=T[4]; //get the actual water temp
 	
-	
 	if( WaterPID.Compute() ) 
 	{	//if PID computed a new output
-		//we calculate the corresponding amount of time to move the valve
+		//we calculate the corresponding amount of time to move the valve :
 		windowOn=Woutput-lastWoutput;		
 		//we do this to get only the difference between two subsequent PID
 		//outputs, so we can adjust the valve position
-Serial<<"TinSet:"<<TinSet<<" Wsetpoint:"<<Wsetpoint<<" Winput:"<<Winput<<
-" Woutput:"<<Woutput<<"lastWoutput"<<lastWoutput<<" windowOn:"<<windowOn;
+
 		
 		lastWoutput=Woutput; //and then store the current value for next time
 					
@@ -1901,14 +1899,12 @@ Serial<<"TinSet:"<<TinSet<<" Wsetpoint:"<<Wsetpoint<<" Winput:"<<Winput<<
 		
 		direction = (windowOn>0); 	//get the movement direction
 		windowOn = abs(windowOn); 	//get the time to move the valve
-		Serial<<" "<<windowOn<<" "<<direction<<_endl;
 	}
 	
 	
 	if (millis() - windowStartTime > (C[1][0]*1E3))
 		windowStartTime += (C[1][0]*1E3); //time to shift the time Window
 	
-	//if(heat.periodic(3E3)) Serial<<" "<<millis()<<" "<<windowStartTime<<" "<<millis()-windowStartTime<<" "<<_endl;
 	
 	if (windowOn > millis() - windowStartTime) 
 	{ 
