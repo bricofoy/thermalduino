@@ -1911,7 +1911,7 @@ Serial<<"TinSet:"<<TinSet<<" Wsetpoint:"<<Wsetpoint<<" Winput:"<<Winput<<
 	//if(heat.periodic(3E3)) Serial<<" "<<millis()<<" "<<windowStartTime<<" "<<millis()-windowStartTime<<" "<<_endl;
 	
 	if (windowOn > millis() - windowStartTime) 
-	{ Serial<<"move "<<windowOn<<_endl;
+	{ 
 		moveMixValve(direction); //move the valve according to PID output
 	}
 	
