@@ -305,16 +305,16 @@ int freeRam () {
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
 }
 
-void setOutput(byte pin, bool state)
+void setOutput(byte _pin, bool _state)
 {
-	if(!(RF&pin))
-		if(state) R |= pin; //set the <pin> bit
-		else R &= ~pin; //unset the <pin> bit		
+	if(!(RF&_pin))
+		if(_state) R |= _pin; //set the <pin> bit
+		else R &= ~_pin; //unset the <pin> bit		
 }
 
-void moveMixValve(bool direction)
+void moveMixValve(bool _direction)
 {
-	setOutput(BIT_R2, direction);
+	setOutput(BIT_R2, _direction);
 	setOutput(BIT_R3, 1);
 }
 
@@ -475,30 +475,30 @@ char encoderCount()
 	return retval;
 }
 
-void printT(byte i)
+void printT(byte _i)
 {
-	if(TForce[i]) lcd<<"F";
+	if(TForce[_i]) lcd<<"F";
 	else 
-		if(T[i]==-127) 
+		if(T[_i]==-127) 
 		{
 			lcd<<" --.-";
 			return; 
 		}
-	if(T[i]>=0) 
+	if(T[_i]>=0) 
 	{
-		if(!TForce[i]&&T[i]<100) lcd<<F(" ");
-		if(T[i]<10) lcd<<F(" ");
+		if(!TForce[_i]&&T[_i]<100) lcd<<F(" ");
+		if(T[_i]<10) lcd<<F(" ");
 	}
-	else if(T[i]>-10) lcd<<F(" "); 
+	else if(T[_i]>-10) lcd<<F(" "); 
 	
-	lcd.print(T[i],1);
+	lcd.print(T[_i],1);
 }
 
-void printR(byte bit)
+void printR(byte _bit)
 {
-	if(RF&bit) lcd<<F("F");
+	if(RF&_bit) lcd<<F("F");
 	else lcd<<F(" ");
-	lcd<<((R&bit)&&1);
+	lcd<<((R&_bit)&&1);
 }
 	
 
@@ -860,23 +860,23 @@ void menu_param_manu()
 		menu.next(menu_start);
 }
 
-void outset(byte bit, char count)
+void outset(byte _bit, char _count)
 {
-	if(count==0) return;
+	if(_count==0) return;
 	
 	char mode;
-	mode=(((RF&bit)&&1)<<1)|((R&bit)&&1);//0=auto,0 1=auto,1 2=forced,0 3=forced,1
+	mode=(((RF&_bit)&&1)<<1)|((R&_bit)&&1);//0=auto,0 1=auto,1 2=forced,0 3=forced,1
 	
 	if(mode==0) mode=1;
-	mode+=count;
+	mode+=_count;
 	if(mode>3) mode=1;
 	if(mode<1) mode=3;
 
 	switch (mode)
 	{
-		case 1 : { RF &= ~bit; break;}
-		case 2 : { RF |= bit; R &= ~bit; break;}
-		case 3 : { RF |= bit; R |= bit; break;}
+		case 1 : { RF &= ~_bit; break;}
+		case 2 : { RF |= _bit; R &= ~_bit; break;}
+		case 3 : { RF |= _bit; R |= _bit; break;}
 	}
 }
 
@@ -1198,17 +1198,17 @@ void menu_setsensors3()
 		
 			
 
-void arrow(byte max=6)
+void arrow(byte _max=6)
 {
-		if (Pos>2) lcd.setCursor(10,Pos-2);
-		else lcd.setCursor(0,Pos+1); 
-		lcd.print(F(" "));
-		Pos+=encoderCount();
-		if (Pos>(max-1)) Pos=0;
-		if (Pos<0) Pos=max-1;
-		if (Pos>2) lcd.setCursor(10,Pos-2); 
-		else lcd.setCursor(0,Pos+1); 
-		lcd<<(char)126;
+	if (Pos>2) lcd.setCursor(10,Pos-2);
+	else lcd.setCursor(0,Pos+1); 
+	lcd.print(F(" "));
+	Pos+=encoderCount();
+	if (Pos>(_max-1)) Pos=0;
+	if (Pos<0) Pos=_max-1;
+	if (Pos>2) lcd.setCursor(10,Pos-2); 
+	else lcd.setCursor(0,Pos+1); 
+	lcd<<(char)126;
 }
 
 void menu_setS()
