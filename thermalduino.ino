@@ -1815,7 +1815,7 @@ void heat_run()
 {
 	static unsigned long windowStartTime;
 	static int lastWoutput;
-	static int windowOn;
+	static int windowOn, windowMove=0;
 	static bool direction;
 		
 	if(heat.isFirstRun())
@@ -1885,13 +1885,16 @@ void heat_run()
 		windowOn = abs(windowOn); 	//get the time to move the valve
 	}
 	
-	if (windowOn > millis() - windowStartTime) 
+	if (windowMove > millis() - windowStartTime) 
 	{ 
 		moveMixValve(direction); //move the valve according to PID output
 	}
 	else //make sure we don't shift the window while moving the valve.
+	{
 		if (millis() - windowStartTime > (C[1][0]*1E3)) //time to shift the time Window
 			windowStartTime += (C[1][0]*1E3);
+		windowMove=windowOn;
+	}
 	
 	if(!Hon) 
 	{
