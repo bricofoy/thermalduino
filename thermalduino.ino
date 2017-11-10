@@ -587,7 +587,7 @@ void datalog_write()
 		Logfile << F(";")<<T[i] <<F(";");
 	}
 	//add the heating relevant data : Setpoint temperature, water calculated temperature, valve position
-	Logfile<<TinSet<<F(";")<<Wsetpoint<<F(";")<<Woutput<<F(";");
+	Logfile<<TinSet<<F(";")<<Hon<<F(";")<<Wsetpoint<<F(";")<<Woutput<<F(";");
 	//and the relays status
 	Logfile<<(byte)Pwm0<<F(";");	
 	(RF&BIT_R0)?Logfile<<F("F;"):Logfile<<F(";");
