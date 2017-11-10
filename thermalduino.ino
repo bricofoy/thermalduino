@@ -1867,7 +1867,7 @@ void heat_run()
 		//we calculate the corresponding amount of time to move the valve :
 		windowOn=Woutput-lastWoutput;		
 		//we do this to get only the difference between two subsequent PID
-		//outputs, so we can adjust the valve position
+		//outputs, so we can adjust the valve position by this amount of moving time
 
 		
 		lastWoutput=Woutput; //and then store the current value for next time
@@ -1877,24 +1877,21 @@ void heat_run()
 		//move we did not actually do, to keep accurate recording of valve position 
 		if (abs(windowOn)<(C[1][2]*1E3))
 		{
-			lastWoutput-=windowOn;
-			//and we just don't move
-			windowOn=0;
+			lastWoutput -= windowOn; //so we record the time we did not move
+			windowOn = 0; //and we just don't move
 		}
 		
 		direction = (windowOn>0); 	//get the movement direction
 		windowOn = abs(windowOn); 	//get the time to move the valve
 	}
 	
-	
-	if (millis() - windowStartTime > (C[1][0]*1E3))
-		windowStartTime += (C[1][0]*1E3); //time to shift the time Window
-	
-	
 	if (windowOn > millis() - windowStartTime) 
 	{ 
 		moveMixValve(direction); //move the valve according to PID output
 	}
+	else //make sure we don't shift the window while moving the valve.
+		if (millis() - windowStartTime > (C[1][0]*1E3)) //time to shift the time Window
+			windowStartTime += (C[1][0]*1E3);
 	
 	if(!Hon) 
 	{
