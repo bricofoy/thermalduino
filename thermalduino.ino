@@ -40,7 +40,7 @@ int TinSet;
 #define DELAY_MENU_BACK			600E3	//10 minutes
 #define DELAY_MENU_EXIT_PARAM 	40E3	//40 seconds
 #define DELAY_MENU_REFRESH		1500
-//#define DELAY_LOG_PERIOD		5E3	
+
 #define DELAY_SDINIT			20E3
 #define DELAY_SOLAR_OFF			1800E3	//30 minutes. delay before switching off
 										//solar pump power
@@ -51,16 +51,14 @@ int TinSet;
 #define PIN_BTN 8
 char Counter=0;
 
-
+//SD card for data storage
 #define PIN_SD_CS	SS
 #define PIN_SD_ALIM 49
 #define LOGFILENAME	"datalog"
 #define LOGFILEEXT 	".csv"
-// File system object.
-SdFat Sd;
-// Log file.
-SdFile Logfile;
-bool SdOK=false,FileOK=false;
+SdFat Sd; // File system object.
+SdFile Logfile; // Log file.
+bool SdOK=false, FileOK=false; //some flags
 
 //mixing valve movements
 #define MVOPEN 		1
@@ -269,10 +267,7 @@ void loop(void)
 	btn.update(!digitalRead(PIN_BTN)); // ! because btn switch to gnd
 	encoderRead();
 	gettemp.run();
-	
-	//SolarPID.Compute();
-	//WaterPID.Compute();
-	
+		
 	Hon = C[0][0]; //is heat required ?
 	
 	solar.run();
@@ -562,19 +557,6 @@ void datalog_start()
 		return;
 	}
  	
-/*	FileOK=Logfile.open(LOGFILENAME, O_RDWR | O_CREAT | O_AT_END);
-	if(!FileOK)
-	{
-		datalog.next(datalog_wait_card);
-		return;
-	}
-
-/* 	Logfile<<_endl<<F("date;");
-	for(byte i=0;i<SENSOR_NBR;i++) Logfile << F("F;T")<<i<<F(";");
-	Logfile<<F("Pwm;");
-	for(byte i=0;i<RELAYS_NBR;i++) Logfile << F("F;R")<<i<<F(";"); 
-	Logfile<<_endl;
-	Logfile.close();*/
  	datalog.next(datalog_write);				
 }
 
@@ -596,17 +578,18 @@ void datalog_write()
 		datalog.next(datalog_wait_card);
 		return;
 	}
-	
+	//Add date and time starting the line
 	Logfile<<RTC.getS(DS1307_STR_DATE,0)<<F(" ")<<RTC.getS(DS1307_STR_TIME,0)<<F(";");
-	
+	//add the temperatures
 	for(byte i=0;i<SENSOR_NBR;i++) 
 	{
 		if(TForce[i]) Logfile<<F("F");
 		Logfile << F(";")<<T[i] <<F(";");
 	}
-	
-	Logfile<<(byte)Pwm0<<F(";");
-	
+	//add the heating relevant data : Setpoint temperature, water calculated temperature, valve position
+	Logfile<<TinSet<<F(";")<<Wsetpoint<<F(";")<<Woutput<<F(";");
+	//and the relays status
+	Logfile<<(byte)Pwm0<<F(";");	
 	(RF&BIT_R0)?Logfile<<F("F;"):Logfile<<F(";");
 	(R&BIT_R0)?Logfile<<F("1;"):Logfile<<F("0;");
 	(RF&BIT_R1)?Logfile<<F("F;"):Logfile<<F(";");
@@ -634,6 +617,8 @@ void menu_start()
 	
 	if (menu.isFirstRun())
 	{
+		lcd.begin(4,20);
+		lcd.backlight();
 		lcd.clear();
 		lcd.print(F("Ballon"));
 		lcd.setCursor(0,1); lcd.print(F("Capteur"));
@@ -760,10 +745,10 @@ void menu_param()
 	if (menu.isFirstRun()) 
 	{
 		lcd.clear();
-		lcd<<(char)126<<F("Reglages horloge");
-		lcd.setCursor(1,1); lcd<<F("Param. sondes");
+		lcd<<(char)126<<F("Param. chauffage");
+		lcd.setCursor(1,1); lcd<<F("Param. bouilleur");
 		lcd.setCursor(1,2); lcd<<F("Param. solaire");
-		lcd.setCursor(1,3); lcd<<F("Param. chauffage");
+		lcd.setCursor(1,3); lcd<<F("Param. systeme");
 		Pos=0;
 	}
 
@@ -779,10 +764,10 @@ void menu_param()
 	if(btn.state(BTN_CLICK))
 		switch (Pos)
 		{
-			case 0 : { menu.next(menu_setclock); break; }
-			case 1 : { menu.next(menu_setsensors); break; }
+			case 0 : { menu.next(menu_setC); break; }
+			case 1 : { menu.next(menu_setB); break; }
 			case 2 : { menu.next(menu_setS); break; }
-			case 3 : { menu.next(menu_setC); break; }
+			case 3 : { menu.next(menu_setP); break; }
 		}
 				
 	if(btn.state(BTN_LONGCLICK) || menu.elapsed(DELAY_MENU_EXIT_PARAM))
@@ -794,8 +779,8 @@ void menu_param2()
 	if (menu.isFirstRun()) 
 	{
 		lcd.clear();
-		lcd<<(char)126<<F("Param. bouilleur");
-		lcd.setCursor(1,1); lcd<<F("Param. systeme");
+		lcd<<(char)126<<F("Reglages horloge");
+		lcd.setCursor(1,1); lcd<<F("Param. sondes");
 		lcd.setCursor(1,2); lcd<<F("xxx");
 		lcd.setCursor(1,3); lcd<<F("Manuel");
 		Pos=0;
@@ -813,8 +798,8 @@ void menu_param2()
 	if(btn.state(BTN_CLICK))
 		switch (Pos)
 		{
-			case 0 : { menu.next(menu_setB); Pos=0; break; }
-			case 1 : { menu.next(menu_setP); Pos=0; break; }
+			case 0 : { menu.next(menu_setclock); Pos=0; break; }
+			case 1 : { menu.next(menu_setsensors); Pos=0; break; }
 			case 2 : { Pos=0; break; }
 			case 3 : { menu.next(menu_param_manu); Pos=0; break; }
 		}
