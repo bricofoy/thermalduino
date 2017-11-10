@@ -1498,6 +1498,7 @@ void menu_editSxx()
 		menu.next(menu_setSxx);
 		lcd.noBlink();
 		saveParams(); //store the modified value
+		SetPIDs(); //just in case we changed one of the PID parameters
 	}
 	
 	if(btn.state(BTN_LONGCLICK))
@@ -1542,6 +1543,7 @@ void menu_editCxx()
 		menu.next(menu_setCxx);
 		lcd.noBlink();
 		saveParams(); //store the modified value
+		SetPIDs(); //just in case we changed one of the PID parameters
 	}
 	
 	if(btn.state(BTN_LONGCLICK))
