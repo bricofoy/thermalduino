@@ -21,6 +21,8 @@
 
 #include <avr/wdt.h> //watchdog timer
 
+
+#define PIN_ONE_WIRE_BUS A3
 //sensor addresses EEPROM storage address
 #define EEPROM_SENSOR_ADR 	0
 #define SENSOR_NBR 			10
@@ -32,10 +34,15 @@ float T[SENSOR_NBR];
 bool TForce[SENSOR_NBR];
 bool Hon;
 int TinSet;
- 
 #define TEMPERATURE_RESOLUTION 9 //0,5°C sensor acccuracy.
 
-#define PIN_ONE_WIRE_BUS A3
+// Setup a oneWire instance to communicate with any OneWire devices
+OneWire oneWire(PIN_ONE_WIRE_BUS);
+// Pass our oneWire reference to Dallas Temperature.
+DallasTemperature sensors(&oneWire);
+ 
+
+
 
 #define DELAY_MENU_BACK			600E3	//10 minutes
 #define DELAY_MENU_EXIT_PARAM 	40E3	//40 seconds
@@ -196,10 +203,6 @@ const char *Bt0[]={
 	"T max bas ballon"}; 
 const char **Bt[]={Bt0};
 
-// Setup a oneWire instance to communicate with any OneWire devices
-OneWire oneWire(PIN_ONE_WIRE_BUS);
-// Pass our oneWire reference to Dallas Temperature.
-DallasTemperature sensors(&oneWire);
 
 
 //Values for the chinese GY-IICLCD backpack used
@@ -309,8 +312,8 @@ void setOutput(byte _pin, bool _state)
 
 void moveMixValve(bool _direction)
 {
-	setOutput(BIT_R2, _direction);
-	setOutput(BIT_R3, 1);
+	setOutput(BIT_R3, !_direction);
+	setOutput(BIT_R2, 1);
 }
 
 
@@ -1814,8 +1817,8 @@ void heat_wait()
 void heat_run()
 {
 	static unsigned long windowStartTime;
-	static int lastWoutput;
-	static int windowOn, windowMove=0;
+	static unsigned long lastWoutput;
+	static unsigned long windowOn, windowMove=0;
 	static bool direction;
 		
 	if(heat.isFirstRun())
