@@ -22,7 +22,8 @@
 #include <avr/wdt.h> //watchdog timer
 
 
-#define PIN_ONE_WIRE_BUS A3
+#define PIN_ONE_WIRE_BUS1 A3
+#define PIN_ONE_WIRE_BUS2 A2
 //sensor addresses EEPROM storage address
 #define EEPROM_SENSOR_ADR 	0
 #define SENSOR_NBR 			10
@@ -37,9 +38,11 @@ int TinSet;
 #define TEMPERATURE_RESOLUTION 9 //0,5°C sensor acccuracy.
 
 // Setup a oneWire instance to communicate with any OneWire devices
-OneWire oneWire(PIN_ONE_WIRE_BUS);
+OneWire oneWire1(PIN_ONE_WIRE_BUS1);
+OneWire oneWire2(PIN_ONE_WIRE_BUS2);
 // Pass our oneWire reference to Dallas Temperature.
-DallasTemperature sensors(&oneWire);
+DallasTemperature sensors1(&oneWire1);
+DallasTemperature sensors2(&oneWire2);
  
 
 
@@ -434,7 +437,8 @@ void setSensorsResolution()
 {
 	for (byte i=0;i<SENSOR_NBR; i++)
 	{
-		sensors.setResolution(SensorAddress[i], TEMPERATURE_RESOLUTION);
+		sensors1.setResolution(SensorAddress[i], TEMPERATURE_RESOLUTION);
+		sensors2.setResolution(SensorAddress[i], TEMPERATURE_RESOLUTION);
 	}
 }
 
@@ -503,8 +507,10 @@ void printR(byte _bit)
 ////////////////////////gettemp state machine///////////////////////////////////
 void gettemp_start()
 {
-	sensors.begin(); // Start up the dallas library
-	sensors.setWaitForConversion(false); //don't wait !
+	sensors1.begin(); // Start up the dallas library
+	sensors2.begin();
+	sensors1.setWaitForConversion(false); //don't wait !
+	sensors2.setWaitForConversion(false);
 	loadSensorsAddresses(); //fill the addresses array with the values in EEPROM
 	setSensorsResolution();
 	gettemp.next(gettemp_request);
@@ -512,7 +518,8 @@ void gettemp_start()
 
 void gettemp_request()
 {
-	sensors.requestTemperatures();
+	sensors1.requestTemperatures();
+	sensors2.requestTemperatures();
 	gettemp.next(gettemp_wait);
 }
 
@@ -528,7 +535,10 @@ void gettemp_read()
 	if (i<SENSOR_NBR)
 	{
 		if(!TForce[i])
-			T[i] = sensors.getTempC(SensorAddress[i]);
+		{
+			T[i] = sensors1.getTempC(SensorAddress[i]);
+			if(T[i] == -127) T[i] = sensors2.getTempC(SensorAddress[i]);
+		}
 	}
 	else gettemp.next(gettemp_request);
 }
@@ -536,7 +546,7 @@ void gettemp_read()
 /////////////////////////datalog state machine//////////////////////////////////
 void datalog_wait()
 {
-	if(datalog.elapsed(P[0][0]*1E4)) //delay unit is x10s so we *1000 to get ms
+	if(datalog.elapsed(P[0][0]*1E4)) //delay unit is x10s so we *10000 to get ms
 		datalog.next(datalog_write);
 }
 
