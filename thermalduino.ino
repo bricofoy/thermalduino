@@ -1149,11 +1149,11 @@ void menu_setsensors2()
 		lcd.clear();
 		lcd<<F("Sonde T")<<(byte)Pos;
 		lcd.setCursor(0,1);
-		sensors.getDeviceCount();
-		if (!sensors.getAddress(SensorAddress[Pos], 0)) lcd<<F("erreur sonde");
+		sensors1.getDeviceCount();
+		if (!sensors1.getAddress(SensorAddress[Pos], 0)) lcd<<F("erreur sonde");
 		else {
-			sensors.setResolution(SensorAddress[Pos], TEMPERATURE_RESOLUTION);
-			sensors.requestTemperatures();
+			sensors1.setResolution(SensorAddress[Pos], TEMPERATURE_RESOLUTION);
+			sensors1.requestTemperatures();
 					
 			//print sensor address
 			for (uint8_t i = 0; i < 8; i++){
@@ -1163,7 +1163,7 @@ void menu_setsensors2()
 			}
 			delay(750/(1<<(12-TEMPERATURE_RESOLUTION)));
 			lcd.setCursor(12,0);
-			lcd<<sensors.getTempC(SensorAddress[Pos]);
+			lcd<<sensors1.getTempC(SensorAddress[Pos]);
 		}
 	}
 	
