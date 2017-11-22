@@ -74,15 +74,21 @@ bool SdOK=false, FileOK=false; //some flags
 #define MVOPEN 		1
 #define MVCLOSE 	0
 
+//mixing valve position
+double MVWantedPos;
+char MVActualPos;
+
+
 //Variables for water PID
-double Wsetpoint, Winput, Woutput;
+double Wsetpoint, Winput;
 //Specify the links and initial tuning parameters
-PID WaterPID(&Winput, &Woutput, &Wsetpoint, 0, 0, 0, DIRECT);
+PID WaterPID(&Winput, &MVWantedPos, &Wsetpoint, 0, 0, 0, DIRECT);
 
 //Variables for solar PID
 double Ssetpoint, Sinput, Pwm0;
 //Specify the links and initial tuning parameters
 PID SolarPID(&Sinput, &Pwm0, &Ssetpoint, 0, 0, 0, REVERSE);
+
 
 //outputs
 #define PIN_PWM0	10	//solar pump speed signal
@@ -603,7 +609,7 @@ void datalog_write()
 		Logfile << F(";")<<T[i] <<F(";");
 	}
 	//add the heating relevant data : Setpoint temperature, water calculated temperature, valve position
-	Logfile<<TinSet<<F(";")<<Hon<<F(";")<<Wsetpoint<<F(";")<<Woutput<<F(";");
+	Logfile<<TinSet<<F(";")<<Hon<<F(";")<<Wsetpoint<<F(";")<<MVWantedPos<<F(";")<<MVActualPos<<F(";");
 	//and the relays status
 	Logfile<<(byte)Pwm0<<F(";");	
 	(RF&BIT_R0)?Logfile<<F("F;"):Logfile<<F(";");
@@ -1868,7 +1874,7 @@ void heat_run()
 	
 	WaterPID.Compute();
     
-    MVWantedPos=(char)Wsetpoint;
+    //MVWantedPos=(char)Wsetpoint;
 	
 	if(!Hon) 
 	{
@@ -1923,12 +1929,11 @@ void boiler_err()
 }
 
 ////////////////////////mix state machine///////////////////////////////////////
-char MVWantedPos, MVActualPos;
 
 void mix_close()
 {   //we fully close the valve to make sure we know the initial position
     moveMixValve(MVCLOSE);
-    if(mix.elapsed(C[1][0]*1000)) //C1.0 is in s so we need to *1000 to get value in ms.
+    if(mix.elapsed(C[1][0]*1E3)) //C1.0 is in s so we need to *1000 to get value in ms.
     {                           
         MVActualPos=0;
         mix.next(mix_wait);
@@ -1938,6 +1943,7 @@ void mix_close()
 
 void mix_wait()
 {
+	MVWantedPos=round(MVWantedPos);
     if(MVWantedPos<0) MVWantedPos=0;
     if(MVWantedPos>100) MVWantedPos=100;
     
