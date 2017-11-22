@@ -172,7 +172,7 @@ const char *Ct0[]={
 const char *Ct1[]={	
 	"Tps mvmt complet s",
 	"Periode cycle s",
-	"Tps manoeuvre min s",
+	"xxx",
 	"Kp x10",
 	"Ki x10",
 	"Kd x10"};
@@ -217,6 +217,7 @@ YASM datalog;
 YASM solar;
 YASM heat;
 YASM boiler;
+YASM mix;
 BTN btn;
 
 DS1307_t DateTime;
@@ -262,7 +263,8 @@ void setup(void)
   datalog.next(datalog_start);
   solar.next(solar_off);
   boiler.next(boiler_wait);
-  heat.next(heat_close);
+  heat.next(heat_wait);
+  mix.next(mix_close);
 }
 
 void loop(void) 
@@ -279,6 +281,7 @@ void loop(void)
 	solar.run();
 	heat.run();
 	boiler.run();
+    mix.run();
 	menu.run(); //menu must be called after the automation SMs because if not 
 				//R values are not set and it always display 0
 	datalog.run();
@@ -290,13 +293,13 @@ void SetPIDs()
 {
 	//PID limits PWMmin and PWMmax
 	SolarPID.SetOutputLimits( S[1][1], S[1][0] );
-	SolarPID.SetTunings( S[1][3]/10, S[1][4]/10, S[1][5]/10 );
+	SolarPID.SetTunings( S[1][3]*10, S[1][4]*10, S[1][5]*10 );
 	SolarPID.SetSampleTime(500);
 	
-	//PID limits between 0 and valve full move time
-	WaterPID.SetOutputLimits( 0, C[1][0]*1E3 );
-	WaterPID.SetTunings(  C[1][3]/10, C[1][4]/10, C[1][5]/10 );
-	WaterPID.SetSampleTime( C[1][0]*1E3 ); 
+	//PID limits between 0 and 100% valve position
+	WaterPID.SetOutputLimits( 0, 100 );
+	WaterPID.SetTunings(  C[1][3]*10, C[1][4]*10, C[1][5]*10 );
+	WaterPID.SetSampleTime( C[1][1]*1E3 ); 
 }
 
 //from http://jeelabs.org/2011/05/22/atmega-memory-use/
@@ -1808,40 +1811,28 @@ void solar_try()
 }
 
 ////////////////////////heat state machine//////////////////////////////////////
-void heat_close()
-{
-	if(heat.isFirstRun()) Serial<<"heat_close"<<_endl;
-	moveMixValve(MVCLOSE);
-	
-	if( heat.elapsed(C[1][0]*1E3) )
-		heat.next(heat_wait);
-}
 
 void heat_wait()
 {
-	if(heat.isFirstRun()) Serial<<"heat_wait"<<_endl;
-	if(Hon)
-		heat.next(heat_run);
+	if(heat.isFirstRun()) 
+    {
+        Serial<<"heat_wait"<<_endl;
+        MVWantedPos=0;
+    }
+	if(Hon) heat.next(heat_run);
 }
 
 void heat_run()
 {
-	static unsigned long windowStartTime;
-	static unsigned long lastWoutput;
-	static unsigned long windowOn, windowMove=0;
-	static bool direction;
-		
 	if(heat.isFirstRun())
 	{
 		Serial<<"heat_run"<<_endl;
-		windowStartTime=millis();
 		WaterPID.SetMode(AUTOMATIC);
-		lastWoutput=0; //valve must be fully closed prior to start 
 	}
 
 	setOutput(BIT_R1,1); //pump on
 	
-	//if(heat.periodic(30E3)) //check every 30s is often enough
+	if(heat.periodic(30E3)) //check every 30s is often enough
 	{
 		if( DateTime.hour<C[0][3] || DateTime.hour>C[0][4] )
 			TinSet=C[0][2];  //night setpoint
@@ -1875,70 +1866,30 @@ void heat_run()
 	
 	Winput=T[4]; //get the actual water temp
 	
-	if( WaterPID.Compute() ) 
-	{	//if PID computed a new output
-		//we calculate the corresponding amount of time to move the valve :
-		windowOn=Woutput-lastWoutput;		
-		//we do this to get only the difference between two subsequent PID
-		//outputs, so we can adjust the valve position by this amount of moving time
-
-		
-		lastWoutput=Woutput; //and then store the current value for next time
-					
-		//if movement is shorter than min mvmt time, just don't move to protect
-		//the valve motor. But doing so we need to keep track of the amount of 
-		//move we did not actually do, to keep accurate recording of valve position 
-		if (abs(windowOn)<(C[1][2]*1E3))
-		{
-			lastWoutput -= windowOn; //so we record the time we did not move
-			windowOn = 0; //and we just don't move
-		}
-		
-		direction = (windowOn>0); 	//get the movement direction
-		windowOn = abs(windowOn); 	//get the time to move the valve
-	}
-	
-	if (windowMove > millis() - windowStartTime) 
-	{ 
-		moveMixValve(direction); //move the valve according to PID output
-	}
-	else //make sure we don't shift the window while moving the valve.
-	{
-		if (millis() - windowStartTime > (C[1][0]*1E3)) //time to shift the time Window
-			windowStartTime += (C[1][0]*1E3);
-		windowMove=windowOn;
-	}
+	WaterPID.Compute();
+    
+    MVWantedPos=(char)Wsetpoint;
 	
 	if(!Hon) 
 	{
-		heat.next(heat_close);
+		heat.next(heat_wait);
 		WaterPID.SetMode(MANUAL);
 	}
 	if(Hon && (T[3]<C[3][1]))
 	{
-		heat.next(heat_err_close);
+		heat.next(heat_err);
 		WaterPID.SetMode(MANUAL);
 	}	
 }
 
-void heat_err_close()
+void heat_err()
 {
-	/*if(heat.isFirstRun())
-	{
-		//message tank empty
-	}*/
-	if(heat.isFirstRun()) Serial<<"heat_err_close"<<_endl;
-	moveMixValve(MVCLOSE);
-	
-	if( heat.elapsed(C[1][0]*1E3) )
-		heat.next(heat_err_wait);
-}
-
-void heat_err_wait()
-{
-	if(heat.isFirstRun()) Serial<<"heat_err_wait"<<_endl;
-	if( !Hon || (T[3]>C[3][1]) )
-		heat.next(heat_wait);
+	if(heat.isFirstRun()) 
+    {
+        Serial<<"heat_err"<<_endl;
+        MVWantedPos=0;
+    }
+	if( !Hon || (T[3]>C[3][1]) ) heat.next(heat_wait);
 }
 
 
@@ -1969,4 +1920,47 @@ void boiler_err()
 	
 	if((T[1]<B[0][2])||(T[8]<(B[0][0]-B[0][1])))
 		boiler.next(boiler_run);
+}
+
+////////////////////////mix state machine///////////////////////////////////////
+char MVWantedPos, MVActualPos;
+
+void mix_close()
+{   //we fully close the valve to make sure we know the initial position
+    moveMixValve(MVCLOSE);
+    if(mix.elapsed(C[1][0]*1000)) //C1.0 is in s so we need to *1000 to get value in ms.
+    {                           
+        MVActualPos=0;
+        mix.next(mix_wait);
+    }
+}
+
+
+void mix_wait()
+{
+    if(MVWantedPos<0) MVWantedPos=0;
+    if(MVWantedPos>100) MVWantedPos=100;
+    
+    if(MVActualPos<MVWantedPos) mix.next(mix_moveOpen);
+    if(MVActualPos>MVWantedPos) mix.next(mix_moveClose);
+}
+
+void mix_moveOpen()
+{
+    moveMixValve(MVOPEN);
+    if(mix.elapsed(C[1][0]*10)) //C1.0 is in s so we need to *1000 to get value in ms.
+    {                           //then we /100 to get ms time needed to move 1% : so we *10
+        MVActualPos++;
+        mix.next(mix_wait);
+    }
+}
+
+void mix_moveClose()
+{    
+    moveMixValve(MVCLOSE);
+    if(mix.elapsed(C[1][0]*10)) //C1.0 is in s so we need to *1000 to get value in ms.
+    {                           //then we /100 to get ms time needed to move 1% : so we *10
+        MVActualPos--;
+        mix.next(mix_wait);
+    }
 }
