@@ -154,9 +154,9 @@ const char *St1[]={
 	"PWM max %",
 	"PWM min %",
 	"Ecart T0-T1 cible",
-	"Kp x10",
-	"Ki x10",
-	"Kd x10"}; 
+	"Kp /10",
+	"Ki /10",
+	"Kd /10"}; 
 const char *St2[]={	
 	"Demarrage periodique",
 	"T mini capteur",
@@ -179,9 +179,9 @@ const char *Ct1[]={
 	"Tps mvmt complet s",
 	"Periode cycle s",
 	"xxx",
-	"Kp x10",
-	"Ki x10",
-	"Kd x10"};
+	"Kp /10",
+	"Ki /10",
+	"Kd /10"};
 const char *Ct2[]={
 	"Pente x10",
 	"Text non chauffage",
@@ -299,12 +299,12 @@ void SetPIDs()
 {
 	//PID limits PWMmin and PWMmax
 	SolarPID.SetOutputLimits( S[1][1], S[1][0] );
-	SolarPID.SetTunings( S[1][3]*10, S[1][4]*10, S[1][5]*10 );
+	SolarPID.SetTunings( S[1][3]/10, S[1][4]/10, S[1][5]/10 );
 	SolarPID.SetSampleTime(500);
 	
 	//PID limits between 0 and 100% valve position
 	WaterPID.SetOutputLimits( 0, 100 );
-	WaterPID.SetTunings(  C[1][3]*10, C[1][4]*10, C[1][5]*10 );
+	WaterPID.SetTunings(  C[1][3]/10, C[1][4]/10, C[1][5]/10 );
 	WaterPID.SetSampleTime( C[1][1]*1E3 ); 
 }
 
@@ -609,7 +609,7 @@ void datalog_write()
 		Logfile << F(";")<<T[i] <<F(";");
 	}
 	//add the heating relevant data : Setpoint temperature, water calculated temperature, valve position
-	Logfile<<TinSet<<F(";")<<Hon<<F(";")<<Wsetpoint<<F(";")<<MVWantedPos<<F(";")<<MVActualPos<<F(";");
+	Logfile<<TinSet<<F(";")<<Hon<<F(";")<<Wsetpoint<<F(";")<<MVWantedPos<<F(";")<<(int)MVActualPos<<F(";");
 	//and the relays status
 	Logfile<<(byte)Pwm0<<F(";");	
 	(RF&BIT_R0)?Logfile<<F("F;"):Logfile<<F(";");
