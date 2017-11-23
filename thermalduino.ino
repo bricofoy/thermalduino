@@ -33,6 +33,7 @@ DeviceAddress SensorAddress[SENSOR_NBR];
 float T[SENSOR_NBR];
 //float Offset[SENSOR_NBR];
 bool TForce[SENSOR_NBR];
+byte TAge[SENSOR_NBR];
 bool Hon;
 int TinSet;
 #define TEMPERATURE_RESOLUTION 9 //0,5°C sensor acccuracy.
@@ -202,7 +203,7 @@ const char *Pt0[]={
 	"xxxx"};
 const char *Pt1[]={	
 	"Delai sortie menu s",
-	"xx",
+	"Nbr max mes T avt er",
 	"xxx"}; 
 const char **Pt[]={Pt0,Pt1};
 
@@ -540,13 +541,24 @@ void gettemp_wait()
 
 void gettemp_read()
 {
+	float tempT;
 	byte i=gettemp.runCount();
 	if (i<SENSOR_NBR)
 	{
 		if(!TForce[i])
 		{
-			T[i] = sensors1.getTempC(SensorAddress[i]);
-			if(T[i] == -127) T[i] = sensors2.getTempC(SensorAddress[i]);
+			tempT = sensors1.getTempC(SensorAddress[i]);
+			if(tempT == -127) tempT = sensors2.getTempC(SensorAddress[i]);
+			if(tempT == -127)
+			{
+				TAge[i]++;
+				if(TAge[i]>P[1][1]) T[i] = tempT;
+			}
+			else 
+			{
+				TAge[i] = 0;
+				T[i] = tempT;
+			}
 		}
 	}
 	else gettemp.next(gettemp_request);
