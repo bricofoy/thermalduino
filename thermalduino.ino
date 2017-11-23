@@ -560,7 +560,6 @@ void gettemp_read()
 				T[i] = tempT;
 			}
 		}
-		else TAge[i] = 0;
 	}
 	else gettemp.next(gettemp_request);
 }
@@ -618,23 +617,22 @@ void datalog_write()
 	//add the temperatures
 	for(byte i=0;i<SENSOR_NBR;i++) 
 	{
-		TForce[i]?Logfile<<F("F;"):Logfile<<F(" ;");
-		Logfile<<TAge[i]<<F(";");
-		Logfile<<T[i]<<F(";");
+		if(TForce[i]) Logfile<<F("F");
+		Logfile << F(";")<<T[i] <<F(";");
 	}
 	//add the heating relevant data : Setpoint temperature, water calculated temperature, valve position
 	Logfile<<TinSet<<F(";")<<Hon<<F(";")<<Wsetpoint<<F(";")<<MVWantedPos<<F(";")<<(int)MVActualPos<<F(";");
 	//and the relays status
 	Logfile<<(byte)Pwm0<<F(";");	
-	(RF&BIT_R0)?Logfile<<F("F;"):Logfile<<F(" ;");
+	(RF&BIT_R0)?Logfile<<F("F;"):Logfile<<F(";");
 	(R&BIT_R0)?Logfile<<F("1;"):Logfile<<F("0;");
-	(RF&BIT_R1)?Logfile<<F("F;"):Logfile<<F(" ;");
+	(RF&BIT_R1)?Logfile<<F("F;"):Logfile<<F(";");
 	(R&BIT_R1)?Logfile<<F("1;"):Logfile<<F("0;");
-	(RF&BIT_R2)?Logfile<<F("F;"):Logfile<<F(" ;");
+	(RF&BIT_R2)?Logfile<<F("F;"):Logfile<<F(";");
 	(R&BIT_R2)?Logfile<<F("1;"):Logfile<<F("0;");	
-	(RF&BIT_R3)?Logfile<<F("F;"):Logfile<<F(" ;");
+	(RF&BIT_R3)?Logfile<<F("F;"):Logfile<<F(";");
 	(R&BIT_R3)?Logfile<<F("1;"):Logfile<<F("0;");
-	(RF&BIT_R4)?Logfile<<F("F;"):Logfile<<F(" ;");
+	(RF&BIT_R4)?Logfile<<F("F;"):Logfile<<F(";");
 	(R&BIT_R4)?Logfile<<F("1;"):Logfile<<F("0;");
 
 	Logfile<<_endl;
