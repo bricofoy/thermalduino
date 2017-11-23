@@ -154,9 +154,9 @@ const char *St1[]={
 	"PWM max %",
 	"PWM min %",
 	"Ecart T0-T1 cible",
-	"Kp /10",
-	"Ki /10",
-	"Kd /10"}; 
+	"Kp x10",
+	"Ki x10",
+	"Kd x10"}; 
 const char *St2[]={	
 	"Demarrage periodique",
 	"T mini capteur",
@@ -179,9 +179,9 @@ const char *Ct1[]={
 	"Tps mvmt complet s",
 	"Periode cycle s",
 	"xxx",
-	"Kp /10",
-	"Ki /10",
-	"Kd /10"};
+	"Kp x10",
+	"Ki x10",
+	"Kd x10"};
 const char *Ct2[]={
 	"Pente x10",
 	"Text non chauffage",
