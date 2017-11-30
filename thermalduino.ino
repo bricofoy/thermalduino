@@ -1734,12 +1734,15 @@ void menu_testPWM()
 void solar_off()
 {		
 	setOutput(BIT_R0, 0);
-	Pwm0=0;
+	Pwm0=0; 	
+	
+	if(solar.isFirstRun())
+		Serial<<"solar_off"<<T[0]<<" "<<T[1]<<_endl; 
 	
 	if( S[3][0] && T[0]>S[3][1] )
 		solar.next(solar_protection);
 	
-	if( T[0]>(T[1]+S[0][1]) && T[1]<(S[0][0]-S[0][3]) )
+	if( T[0]>(T[1]+S[0][1]) && T[1]<(S[0][0]-S[0][2]) )
 		solar.next(solar_run);
 	
 	if( S[2][0] && T[0]>S[2][1] && solar.elapsed(S[2][3]*60E3) )
@@ -1752,13 +1755,13 @@ void solar_wait()
 	setOutput(BIT_R0, 1);
 	Pwm0=0;
 	
-/* 	if(solar.isFirstRun())
-		Serial<<"solar_wait"<<T[0]<<" "<<T[1]<<_endl; */
+ 	if(solar.isFirstRun())
+		Serial<<"solar_wait"<<T[0]<<" "<<T[1]<<_endl; 
 	
 	if( S[3][0] && T[0]>S[3][1] )
 		solar.next(solar_protection);
 	
-	if( T[0]>(T[1]+S[0][1]) && T[1]<(S[0][0]-S[0][3]) )
+	if( T[0]>(T[1]+S[0][1]) && T[1]<(S[0][0]-S[0][2]) )
 		solar.next(solar_run);
 	
 	if( S[2][0] && T[0]>S[2][1] && solar.elapsed(S[2][3]*60E3) )
@@ -1773,8 +1776,8 @@ void solar_protection()
 	setOutput(BIT_R0, 1);
 	Pwm0=S[1][0];	
 	
-/* 	if(solar.isFirstRun())
-		Serial<<"solar_protection"<<_endl; */
+ 	if(solar.isFirstRun())
+		Serial<<"solar_protection"<<_endl; 
 	
 	if( T[0]<(S[3][1]-S[3][2]) )
 		solar.next(solar_wait);
@@ -1785,10 +1788,10 @@ void solar_protection()
 
 void solar_protection_err()
 {
-/* 	if(solar.isFirstRun())
+ 	if(solar.isFirstRun())
 	{
 		Serial<<"solar_protection error"<<_endl;//message tank overheat
-	} */
+	} 
 	
 	setOutput(BIT_R0, 1);
 	Pwm0=0;
@@ -1802,7 +1805,7 @@ void solar_run()
 	if(solar.isFirstRun())
 	{
 		SolarPID.SetMode(AUTOMATIC);
-	//	Serial<<"solar_run"<<_endl;
+		Serial<<"solar_run"<<_endl;
 	}
 	
 	setOutput(BIT_R0, 1); //pump on
@@ -1823,8 +1826,8 @@ void solar_try()
 	setOutput(BIT_R0, 1);
 	Pwm0=S[1][1];	
 	
-/* 	if(solar.isFirstRun())
-		Serial<<"solar_try "<<_endl; */
+ 	if(solar.isFirstRun())
+		Serial<<"solar_try "<<_endl; 
 	
 	if( solar.elapsed(S[2][2]*1000) )
 		solar.next(solar_wait);
@@ -1945,18 +1948,24 @@ void boiler_err()
 ////////////////////////mix state machine///////////////////////////////////////
 
 void mix_close()
-{   //we fully close the valve to make sure we know the initial position
+{   
+	if(mix.isFirstRun())
+		Serial<<"mix_close"<<MVActualPos*1<<" "<<MVWantedPos<<_endl;
+	//we fully close the valve to make sure we know the initial position
     moveMixValve(MVCLOSE);
     if(mix.elapsed(C[1][0]*1E3)) //C1.0 is in s so we need to *1000 to get value in ms.
     {                           
         MVActualPos=0;
         mix.next(mix_wait);
     }
+    
 }
 
 
 void mix_wait()
 {
+	if(mix.isFirstRun())
+		Serial<<"mix_wait"<<MVActualPos*1<<" "<<MVWantedPos<<_endl;
 	MVWantedPos=round(MVWantedPos);
     if(MVWantedPos<0) MVWantedPos=0;
     if(MVWantedPos>100) MVWantedPos=100;
@@ -1967,6 +1976,8 @@ void mix_wait()
 
 void mix_moveOpen()
 {
+	if(mix.isFirstRun())
+		Serial<<"mix_moveOpen"<<MVActualPos*1<<" "<<MVWantedPos<<_endl;
     moveMixValve(MVOPEN);
     if(mix.elapsed(C[1][0]*10)) //C1.0 is in s so we need to *1000 to get value in ms.
     {                           //then we /100 to get ms time needed to move 1% : so we *10
@@ -1976,7 +1987,9 @@ void mix_moveOpen()
 }
 
 void mix_moveClose()
-{    
+{   
+	if(mix.isFirstRun())
+		Serial<<"mix_moveClose"<<MVActualPos*1<<" "<<MVWantedPos<<_endl; 
     moveMixValve(MVCLOSE);
     if(mix.elapsed(C[1][0]*10)) //C1.0 is in s so we need to *1000 to get value in ms.
     {                           //then we /100 to get ms time needed to move 1% : so we *10
