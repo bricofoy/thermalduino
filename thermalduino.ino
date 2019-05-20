@@ -553,6 +553,7 @@ void gettemp_read()
 			{
 				TAge[i]++;
 				if(TAge[i]>P[1][1]) T[i] = tempT;
+        if(i==0) T[i]=99.9; //to be sure pump run if there is sensor problem on T0 (solar)
 			}
 			else 
 			{
@@ -1752,7 +1753,7 @@ void solar_off()
 
 void solar_wait()
 {
-	setOutput(BIT_R0, 1);
+	setOutput(BIT_R0, 0);
 	Pwm0=0;
 	
  	if(solar.isFirstRun())
